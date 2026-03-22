@@ -35,6 +35,10 @@ module.exports = (io) => {
   io.on('connection', async (socket) => {
     console.log(`User connected: ${socket.userId}`);
 
+    // Подключаем пользователя к его личной комнате для звонков и уведомлений
+    socket.join(`user_${socket.userId}`);
+    console.log(`User ${socket.userId} joined personal room: user_${socket.userId}`);
+
     await User.update(
       { is_online: true, last_seen: new Date() },
       { where: { id: socket.userId } }

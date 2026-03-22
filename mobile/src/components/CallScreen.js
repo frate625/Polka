@@ -48,16 +48,32 @@ export default function CallScreen({
     if (Platform.OS === 'web') {
       if (localVideoRef.current && localStream) {
         localVideoRef.current.srcObject = localStream;
+        console.log('🎥 Локальный поток подключен, треки:', localStream.getTracks().map(t => `${t.kind}: ${t.enabled}`));
       }
       if (remoteVideoRef.current && remoteStream) {
         remoteVideoRef.current.srcObject = remoteStream;
+        console.log('🎥 Удаленный видео поток подключен');
       }
       // Для аудио звонков используем audio элемент
       if (remoteAudioRef.current && remoteStream && !isVideo) {
+        console.log('🔊 Настройка аудио элемента для удаленного потока');
+        console.log('🔊 Удаленный поток треки:', remoteStream.getTracks().map(t => `${t.kind}: ${t.enabled}, readyState: ${t.readyState}`));
+        
         remoteAudioRef.current.srcObject = remoteStream;
-        remoteAudioRef.current.play().catch(err => {
-          console.error('Ошибка воспроизведения аудио:', err);
+        remoteAudioRef.current.volume = 1.0;
+        
+        remoteAudioRef.current.play().then(() => {
+          console.log('✅ Аудио воспроизведение началось');
+        }).catch(err => {
+          console.error('❌ Ошибка воспроизведения аудио:', err);
+          // Попытка воспроизведения по клику пользователя
+          alert('Кликните OK чтобы разрешить воспроизведение звука');
+          remoteAudioRef.current.play();
         });
+      }
+      // Для видео звонков аудио уже в video элементе
+      if (remoteVideoRef.current && remoteStream && isVideo) {
+        console.log('🔊 Видео элемент для видео звонка, треки:', remoteStream.getTracks().map(t => `${t.kind}: ${t.enabled}`));
       }
     }
   }, [localStream, remoteStream, isVideo]);

@@ -75,8 +75,17 @@ export default function useWebRTC(socket, userId) {
 
     // Получение удаленного потока
     pc.ontrack = (event) => {
-      console.log('📺 Получен удаленный поток');
-      setRemoteStream(event.streams[0]);
+      console.log('📺 Получен удаленный поток, треки:', event.streams[0].getTracks().map(t => `${t.kind}: ${t.enabled}`));
+      if (event.streams && event.streams[0]) {
+        setRemoteStream(event.streams[0]);
+        
+        // Дополнительная проверка аудио треков
+        const audioTracks = event.streams[0].getAudioTracks();
+        console.log('🔊 Аудио треки в удаленном потоке:', audioTracks.length);
+        audioTracks.forEach((track, index) => {
+          console.log(`  Трек ${index}: enabled=${track.enabled}, muted=${track.muted}, readyState=${track.readyState}`);
+        });
+      }
     };
 
     pc.onconnectionstatechange = () => {

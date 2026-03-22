@@ -67,33 +67,8 @@ export const AuthProvider = ({ children }) => {
   // Вход пользователя
   const login = async (email, password) => {
     try {
-      console.log('AuthContext: login() вызван', email);
-      alert('Отправка запроса на сервер...');
-      
-      // Используем fetch напрямую для совместимости с Safari
-      const apiUrl = 'http://10.0.1.9:3000/api/auth/login';
-      console.log('Отправка на:', apiUrl);
-      
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ email, password })
-      });
-      
-      console.log('Response status:', response.status);
-      
-      if (!response.ok) {
-        throw new Error('HTTP ' + response.status);
-      }
-      
-      const data = await response.json();
-      console.log('AuthContext: ответ получен', data);
-      
-      const { token: newToken, user: newUser } = data;
-      alert('Успех! Сохраняем данные...');
+      const response = await authAPI.login({ email, password });
+      const { token: newToken, user: newUser } = response.data;
 
       await AsyncStorage.setItem('authToken', newToken);
       await AsyncStorage.setItem('user', JSON.stringify(newUser));
@@ -101,16 +76,13 @@ export const AuthProvider = ({ children }) => {
       setToken(newToken);
       setUser(newUser);
       setIsAuthenticated(true);
-      
-      alert('Вход выполнен успешно!');
 
       return { success: true };
     } catch (error) {
       console.error('Ошибка входа:', error);
-      alert('ОШИБКА: ' + (error.message || 'Неизвестная ошибка'));
       return {
         success: false,
-        error: error.message || 'Неверный email или пароль'
+        error: error.response?.data?.error || 'Неверный email или пароль'
       };
     }
   };

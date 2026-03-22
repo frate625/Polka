@@ -33,19 +33,19 @@ export default function AuthScreen() {
   }, []);
 
   const checkBackendConnection = async () => {
-    const backendUrl = 'http://10.0.1.9:3000';
     try {
+      const backendUrl = api.defaults.baseURL.replace('/api', '');
       console.log('Проверка подключения к:', backendUrl);
-      const response = await fetch(backendUrl, { method: 'GET', timeout: 5000 });
+      const response = await fetch(backendUrl, { method: 'GET' });
       const data = await response.json();
       console.log('Ответ Backend:', data);
       if (data.message) {
         setApiStatus('✅ Подключено: ' + backendUrl);
       }
     } catch (error) {
+      const backendUrl = api.defaults.baseURL.replace('/api', '');
       setApiStatus('❌ Не удается подключиться: ' + backendUrl);
       console.error('Backend connection error:', error);
-      console.error('Error details:', error.message);
     }
   };
 
@@ -56,24 +56,12 @@ export default function AuthScreen() {
       return;
     }
 
-    console.log('Попытка входа...', email);
     setLoading(true);
-    
-    try {
-      console.log('Вызываем login()...');
-      const result = await login(email, password);
-      setLoading(false);
-      
-      console.log('Результат входа:', result);
+    const result = await login(email, password);
+    setLoading(false);
 
-      if (!result.success) {
-        Alert.alert('Ошибка входа', result.error || 'Неверный email или пароль');
-        console.error('Login failed:', result.error);
-      }
-    } catch (error) {
-      setLoading(false);
-      console.error('Login error:', error);
-      Alert.alert('Ошибка подключения', 'Не удалось подключиться к серверу. Backend: http://10.0.1.9:3000');
+    if (!result.success) {
+      Alert.alert('Ошибка входа', result.error || 'Неверный email или пароль');
     }
   };
 
@@ -105,7 +93,7 @@ export default function AuthScreen() {
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={styles.title}>Chat App</Text>
+          <Text style={styles.title}>Polka</Text>
           <Text style={styles.subtitle}>
             {isLogin ? 'Войдите в аккаунт' : 'Создайте аккаунт'}
           </Text>

@@ -26,6 +26,7 @@ export default function CallScreen({
   const timerRef = useRef(null);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
+  const remoteAudioRef = useRef(null);
 
   // Таймер звонка
   useEffect(() => {
@@ -42,7 +43,7 @@ export default function CallScreen({
     };
   }, [visible, isIncoming, remoteStream]);
 
-  // Подключаем видео потоки
+  // Подключаем видео/аудио потоки
   useEffect(() => {
     if (Platform.OS === 'web') {
       if (localVideoRef.current && localStream) {
@@ -51,8 +52,15 @@ export default function CallScreen({
       if (remoteVideoRef.current && remoteStream) {
         remoteVideoRef.current.srcObject = remoteStream;
       }
+      // Для аудио звонков используем audio элемент
+      if (remoteAudioRef.current && remoteStream && !isVideo) {
+        remoteAudioRef.current.srcObject = remoteStream;
+        remoteAudioRef.current.play().catch(err => {
+          console.error('Ошибка воспроизведения аудио:', err);
+        });
+      }
     }
-  }, [localStream, remoteStream]);
+  }, [localStream, remoteStream, isVideo]);
 
   const formatDuration = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -81,6 +89,15 @@ export default function CallScreen({
   return (
     <Modal visible={visible} transparent={false} animationType="fade">
       <View style={styles.container}>
+        {/* Аудио элемент для аудио звонков (скрытый) */}
+        {!isVideo && Platform.OS === 'web' && remoteStream && (
+          <audio
+            ref={remoteAudioRef}
+            autoPlay
+            style={{ display: 'none' }}
+          />
+        )}
+        
         {/* Видео */}
         {isVideo && Platform.OS === 'web' && (
           <View style={styles.videoContainer}>

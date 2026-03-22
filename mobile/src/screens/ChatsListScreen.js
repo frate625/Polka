@@ -65,12 +65,13 @@ export default function ChatsListScreen() {
       const response = await chatAPI.getChats();
       const allChats = response.data.chats || [];
       
-      // Фильтруем "Избранное" (чаты где единственный участник - сам пользователь)
+      // Фильтруем "Избранное" (чаты где все участники - это сам пользователь)
       const filteredChats = allChats.filter(chat => {
         if (chat.type === 'group') return true;
-        if (chat.type === 'private' && chat.members && chat.members.length === 1) {
-          // Скрываем чаты только с самим собой (Избранное)
-          return false;
+        if (chat.type === 'private' && chat.members) {
+          // Скрываем чаты только с самим собой (когда все участники = currentUser)
+          const allMembersAreSelf = chat.members.every(m => m.id === currentUser?.id);
+          return !allMembersAreSelf;
         }
         return true;
       });

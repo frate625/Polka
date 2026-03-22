@@ -44,14 +44,14 @@ const Message = sequelize.define('Message', {
     type: DataTypes.INTEGER,
     allowNull: true
   },
-  // reply_to_id: {  // Временно отключено до создания колонки в БД
-  //   type: DataTypes.UUID,
-  //   allowNull: true,
-  //   references: {
-  //     model: 'messages',
-  //     key: 'id'
-  //   }
-  // },
+  reply_to_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'messages',
+      key: 'id'
+    }
+  },
   status: {
     type: DataTypes.ENUM('sent', 'delivered', 'read'),
     allowNull: false,

@@ -13,9 +13,8 @@ Message.belongsTo(Chat, { foreignKey: 'chat_id', as: 'chat' });
 User.hasMany(Message, { foreignKey: 'sender_id', as: 'sentMessages' });
 Message.belongsTo(User, { foreignKey: 'sender_id', as: 'sender' });
 
-// Reply ассоциация - временно отключена до создания колонки
-// Message.belongsTo(Message, { foreignKey: 'reply_to_id', as: 'reply_to' });
-// Message.hasMany(Message, { foreignKey: 'reply_to_id', as: 'replies' });
+Message.belongsTo(Message, { foreignKey: 'reply_to_id', as: 'reply_to' });
+Message.hasMany(Message, { foreignKey: 'reply_to_id', as: 'replies' });
 
 Message.hasMany(MessageStatus, { foreignKey: 'message_id', as: 'statuses' });
 MessageStatus.belongsTo(Message, { foreignKey: 'message_id', as: 'message' });

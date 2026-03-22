@@ -144,14 +144,7 @@ export default function AuthScreen() {
 
           <TouchableOpacity
             style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={() => {
-              alert('Кнопка нажата! Email: ' + email);
-              if (isLogin) {
-                handleLogin();
-              } else {
-                handleRegister();
-              }
-            }}
+            onPress={isLogin ? handleLogin : handleRegister}
             disabled={loading}
           >
             <Text style={styles.buttonText}>

@@ -1,7 +1,7 @@
 {
-  "name": "chat-app-backend",
+  "name": "polka-backend",
   "version": "1.0.0",
-  "description": "Backend server for MVP chat application",
+  "description": "Backend server for Polka messenger",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

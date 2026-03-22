@@ -38,7 +38,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static('uploads'));
 
 app.get('/', (req, res) => {
-  res.json({ message: 'Chat App API Server' });
+  res.json({ message: 'Polka Messenger API Server', version: '1.0.0' });
 });
 
 app.use('/api/auth', authRoutes);

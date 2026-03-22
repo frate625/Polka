@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "ChatApp",
-    "slug": "chat-app",
+    "name": "Polka",
+    "slug": "polka",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
@@ -14,13 +14,13 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.chatapp.mobile"
+      "bundleIdentifier": "com.polka.messenger"
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#4A90E2"
       },
-      "package": "com.chatapp.mobile",
+      "package": "com.polka.messenger",
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",

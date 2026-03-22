@@ -339,8 +339,13 @@ export default function ChatScreen() {
   const forwardToChat = (targetChatId) => {
     if (!selectedMessage) return;
     
+    // Создаем контент с пометкой о пересылке
+    const forwardedText = selectedMessage.type === 'text'
+      ? `➡️ Переслано из ${chatName}\n\n${selectedMessage.content}`
+      : selectedMessage.content;
+    
     const messageData = {
-      content: selectedMessage.content,
+      content: forwardedText,
       type: selectedMessage.type,
       file_url: selectedMessage.file_url
     };

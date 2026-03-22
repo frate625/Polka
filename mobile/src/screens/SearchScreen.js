@@ -11,9 +11,11 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { chatAPI, messageAPI } from '../services/api';
+import { useAuth } from '../store/AuthContext';
 
 export default function SearchScreen() {
   const navigation = useNavigation();
+  const { user: currentUser } = useAuth();
   const [query, setQuery] = useState('');
   const [searchMode, setSearchMode] = useState('chats'); // 'chats' или 'messages'
   const [chatsResults, setChatsResults] = useState([]);
@@ -62,37 +64,52 @@ export default function SearchScreen() {
 
   // Открыть чат
   const openChat = (chat) => {
+    const otherMember = chat.type === 'private' 
+      ? chat.members?.find(m => m.id !== currentUser?.id)
+      : null;
+    
     const name = chat.type === 'group'
       ? chat.name
-      : chat.members?.find(m => m.id !== chat.user_id)?.username || 'Чат';
+      : (otherMember?.username || 'Чат');
 
     navigation.navigate('Chat', {
       chatId: chat.id,
       chatName: name,
-      chatType: chat.type
+      chatType: chat.type,
+      chatMembers: chat.members
     });
   };
 
   // Рендер чата
-  const renderChatItem = ({ item }) => (
-    <TouchableOpacity style={styles.chatItem} onPress={() => openChat(item)}>
-      <View style={styles.avatar}>
-        <Text style={styles.avatarText}>
-          {(item.name || item.members?.[0]?.username || 'C')[0]?.toUpperCase()}
-        </Text>
-      </View>
-      <View style={styles.chatInfo}>
-        <Text style={styles.chatName}>
-          {item.type === 'group' ? item.name : item.members?.[0]?.username || 'Чат'}
-        </Text>
-        {item.messages?.[0] && (
-          <Text style={styles.lastMessage} numberOfLines={1}>
-            {item.messages[0].content || 'Медиа'}
+  const renderChatItem = ({ item }) => {
+    const otherMember = item.type === 'private' 
+      ? item.members?.find(m => m.id !== currentUser?.id)
+      : null;
+    
+    const displayName = item.type === 'group' 
+      ? item.name 
+      : (otherMember?.username || 'Чат');
+    
+    return (
+      <TouchableOpacity style={styles.chatItem} onPress={() => openChat(item)}>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>
+            {displayName[0]?.toUpperCase() || '?'}
           </Text>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
+        </View>
+        <View style={styles.chatInfo}>
+          <Text style={styles.chatName}>
+            {displayName}
+          </Text>
+          {item.messages?.[0] && (
+            <Text style={styles.lastMessage} numberOfLines={1}>
+              {item.messages[0].content || 'Медиа'}
+            </Text>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>

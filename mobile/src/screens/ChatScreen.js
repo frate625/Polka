@@ -58,8 +58,9 @@ export default function ChatScreen() {
   } = useWebRTC(socket.socket, user.id);
 
   // Получаем ID собеседника (для персональных чатов)
-  const recipientId = chatType === 'personal' && chatMembers 
-    ? chatMembers.find(m => m.user_id !== user.id)?.user_id 
+  const isPersonalChat = chatType === 'personal' || chatType === 'private';
+  const recipientId = isPersonalChat && chatMembers 
+    ? chatMembers.find(m => (m.id || m.user_id) !== user.id)?.id || chatMembers.find(m => (m.id || m.user_id) !== user.id)?.user_id
     : null;
 
   // Настройка header с кнопками
@@ -68,14 +69,14 @@ export default function ChatScreen() {
       headerTitle: () => (
         <TouchableOpacity
           onPress={() => {
-            if (chatType === 'personal' && recipientId) {
+            if (isPersonalChat && recipientId) {
               navigation.navigate('UserProfile', {
                 userId: recipientId,
                 userName: chatName
               });
             }
           }}
-          disabled={chatType !== 'personal'}
+          disabled={!isPersonalChat}
         >
           <Text style={{ fontSize: 17, fontWeight: '600', color: '#000' }}>
             {chatName}
@@ -85,7 +86,7 @@ export default function ChatScreen() {
       headerRight: () => (
         <View style={{ flexDirection: 'row', marginRight: 10 }}>
           {/* Кнопки звонков (только для персональных чатов) */}
-          {chatType === 'personal' && recipientId && (
+          {isPersonalChat && recipientId && (
             <>
               <TouchableOpacity
                 style={{ padding: 5, marginHorizontal: 5 }}

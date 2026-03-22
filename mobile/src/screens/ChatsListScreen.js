@@ -65,14 +65,21 @@ export default function ChatsListScreen() {
       const response = await chatAPI.getChats();
       const allChats = response.data.chats || [];
       
-      // Фильтруем "Избранное" (чаты где все участники - это сам пользователь)
+      // Фильтруем "Избранное" (чаты где единственный участник - сам пользователь)
       const filteredChats = allChats.filter(chat => {
         if (chat.type === 'group') return true;
+        
         if (chat.type === 'private' && chat.members) {
-          // Скрываем чаты только с самим собой (когда все участники = currentUser)
-          const allMembersAreSelf = chat.members.every(m => m.id === currentUser?.id);
-          return !allMembersAreSelf;
+          // Скрываем "Избранное" - чаты с единственным участником (самим собой)
+          // или где нет других участников кроме currentUser
+          const otherMembers = chat.members.filter(m => m.id !== currentUser?.id);
+          
+          // Если нет других участников - это "Избранное", скрываем
+          if (otherMembers.length === 0) {
+            return false;
+          }
         }
+        
         return true;
       });
       
@@ -122,7 +129,8 @@ export default function ChatsListScreen() {
     navigation.navigate('Chat', {
       chatId: chat.id,
       chatName,
-      chatType: chat.type
+      chatType: chat.type,
+      chatMembers: chat.members
     });
   };
 

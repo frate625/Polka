@@ -5,8 +5,12 @@ import { Platform } from 'react-native';
 const ICE_SERVERS = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' }
-  ]
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' }
+  ],
+  iceCandidatePoolSize: 10
 };
 
 export default function useWebRTC(socket, userId) {
@@ -40,15 +44,32 @@ export default function useWebRTC(socket, userId) {
 
   // Создание peer connection
   const createPeerConnection = () => {
+    console.log('🔧 Создание peer connection с ICE серверами:', ICE_SERVERS);
     const pc = new RTCPeerConnection(ICE_SERVERS);
 
     // Получение ICE candidates
     pc.onicecandidate = (event) => {
       if (event.candidate && currentCallId.current) {
+        console.log('🧊 Отправка ICE candidate:', event.candidate.type);
         socket.emit('ice_candidate', {
           callId: currentCallId.current,
           candidate: event.candidate
         });
+      } else if (!event.candidate) {
+        console.log('✅ Все ICE candidates отправлены');
+      }
+    };
+
+    // ICE gathering state
+    pc.onicegatheringstatechange = () => {
+      console.log('🧊 ICE gathering state:', pc.iceGatheringState);
+    };
+
+    // ICE connection state
+    pc.oniceconnectionstatechange = () => {
+      console.log('🧊 ICE connection state:', pc.iceConnectionState);
+      if (pc.iceConnectionState === 'failed') {
+        console.error('❌ ICE connection failed');
       }
     };
 
@@ -59,8 +80,12 @@ export default function useWebRTC(socket, userId) {
     };
 
     pc.onconnectionstatechange = () => {
-      console.log('Connection state:', pc.connectionState);
+      console.log('🔌 Connection state:', pc.connectionState);
+      if (pc.connectionState === 'connected') {
+        console.log('✅ Соединение установлено!');
+      }
       if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+        console.error('❌ Соединение разорвано или не удалось');
         endCall();
       }
     };
@@ -70,22 +95,33 @@ export default function useWebRTC(socket, userId) {
 
   // Инициация звонка
   const makeCall = async (chatId, recipientId, isVideo) => {
-    console.log('📞 Инициация звонка:', { chatId, recipientId, isVideo });
+    console.log('📞 Инициация звонка:', { chatId, recipientId, isVideo, userId });
+
+    if (!socket) {
+      console.error('❌ Socket не подключен');
+      alert('Ошибка: нет соединения с сервером');
+      return;
+    }
 
     const stream = await startLocalStream(isVideo);
-    if (!stream) return;
+    if (!stream) {
+      alert('Не удалось получить доступ к камере/микрофону');
+      return;
+    }
 
     const pc = createPeerConnection();
     peerConnection.current = pc;
 
     // Добавляем локальные треки
     stream.getTracks().forEach(track => {
+      console.log('➕ Добавляем трек:', track.kind);
       pc.addTrack(track, stream);
     });
 
     // Создаем offer
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
+    console.log('📤 Отправляем offer');
 
     // Отправляем offer через сокет
     const callId = `${userId}_${recipientId}_${Date.now()}`;
@@ -100,6 +136,7 @@ export default function useWebRTC(socket, userId) {
       offer: offer
     });
 
+    console.log('✅ Call initiate отправлен');
     setIsCallActive(true);
   };
 

@@ -16,9 +16,16 @@ const chatSocket = require('./src/socket/chatSocket');
 
 const app = express();
 const server = http.createServer(app);
+const allowedOrigins = [
+  'http://localhost:19006',
+  'http://localhost:8081',
+  'https://polka-pi.vercel.app',
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
 const io = socketIo(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || '*',
+    origin: allowedOrigins,
     methods: ['GET', 'POST'],
     credentials: true
   }
@@ -27,7 +34,7 @@ const io = socketIo(server, {
 const PORT = process.env.PORT || 3000;
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
+  origin: allowedOrigins,
   credentials: true
 }));
 

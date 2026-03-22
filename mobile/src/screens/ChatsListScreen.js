@@ -106,8 +106,23 @@ export default function ChatsListScreen() {
         }
         return chat;
       });
+      
+      // Применяем фильтр для избранного
+      const filtered = updatedChats.filter(chat => {
+        if (chat.type === 'group') return true;
+        
+        if (chat.type === 'private' && chat.members) {
+          const otherMembers = chat.members.filter(m => m.id !== currentUser?.id);
+          if (otherMembers.length === 0) {
+            return false; // Скрываем избранное
+          }
+        }
+        
+        return true;
+      });
+      
       // Сортировка по времени последнего сообщения
-      return updatedChats.sort((a, b) =>
+      return filtered.sort((a, b) =>
         new Date(b.last_message_at) - new Date(a.last_message_at)
       );
     });

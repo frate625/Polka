@@ -1,0 +1,363 @@
+// Компонент для записи видео-кружочков (как в Telegram)
+import React, { useState, useRef, forwardRef, useImperativeHandle } from 'react';
+import {
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  Modal,
+  Text,
+  Platform,
+  Alert
+} from 'react-native';
+import { uploadAPI } from '../services/api';
+
+const VideoNotePicker = forwardRef(({ onVideoNoteSelected, onCancel }, ref) => {
+  const [isRecording, setIsRecording] = useState(false);
+  const [showRecordingModal, setShowRecordingModal] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const mediaRecorderRef = useRef(null);
+  const streamRef = useRef(null);
+  const chunksRef = useRef([]);
+  const timerRef = useRef(null);
+  const videoRef = useRef(null);
+  const videoContainerRef = useRef(null);
+  const isCancelledRef = useRef(false);
+
+  // Expose startRecording to parent via ref
+  useImperativeHandle(ref, () => ({
+    startRecording: () => {
+      startRecording();
+    }
+  }));
+
+  const startRecording = async () => {
+    if (Platform.OS !== 'web') {
+      Alert.alert('Ошибка', 'Кружочки доступны только в веб-версии');
+      return;
+    }
+
+    // Сбрасываем флаг отмены
+    isCancelledRef.current = false;
+
+    try {
+      // Запрашиваем доступ к камере
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: 384 },
+          height: { ideal: 384 },
+          facingMode: 'user'
+        },
+        audio: true
+      });
+
+      streamRef.current = stream;
+      
+      setShowRecordingModal(true);
+      
+      // Показываем превью (создаем video элемент через DOM)
+      setTimeout(() => {
+        if (videoContainerRef.current && streamRef.current) {
+          // Создаем video элемент
+          const videoElement = document.createElement('video');
+          videoElement.autoplay = true;
+          videoElement.playsInline = true;
+          videoElement.muted = true;
+          videoElement.style.width = '100%';
+          videoElement.style.height = '100%';
+          videoElement.style.borderRadius = '50%';
+          videoElement.style.objectFit = 'cover';
+          videoElement.style.transform = 'scaleX(-1)';
+          videoElement.style.backgroundColor = '#000';
+          videoElement.srcObject = streamRef.current;
+          
+          // Очищаем контейнер и добавляем видео
+          videoContainerRef.current.innerHTML = '';
+          videoContainerRef.current.appendChild(videoElement);
+          
+          videoRef.current = videoElement;
+          videoElement.play().catch(err => console.log('Play error:', err));
+        }
+      }, 100);
+
+      // Создаем MediaRecorder
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'video/webm;codecs=vp9'
+      });
+
+      chunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        // Останавливаем камеру СРАЗУ
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => {
+            track.stop();
+            console.log('Камера остановлена');
+          });
+          streamRef.current = null;
+        }
+        
+        // Очищаем видео элемент
+        if (videoRef.current && videoRef.current.srcObject) {
+          videoRef.current.srcObject = null;
+        }
+        
+        // Очищаем контейнер
+        if (videoContainerRef.current) {
+          videoContainerRef.current.innerHTML = '';
+        }
+        
+        videoRef.current = null;
+        
+        setShowRecordingModal(false);
+        setRecordingTime(0);
+        
+        // Проверяем - если отменено, НЕ загружаем!
+        if (isCancelledRef.current) {
+          console.log('🚫 Запись отменена, видео не отправляется');
+          isCancelledRef.current = false; // Сбрасываем флаг
+          chunksRef.current = []; // Очищаем chunks
+          return;
+        }
+        
+        // Загружаем только если НЕ отменено
+        const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+        await uploadVideoNote(blob);
+      };
+
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.start();
+      setIsRecording(true);
+
+      // Таймер
+      timerRef.current = setInterval(() => {
+        setRecordingTime(prev => {
+          const newTime = prev + 1;
+          
+          // Максимум 60 секунд
+          if (newTime >= 60) {
+            stopRecording();
+          }
+          
+          return newTime;
+        });
+      }, 1000);
+
+    } catch (error) {
+      console.error('Ошибка доступа к камере:', error);
+      Alert.alert('Ошибка', 'Не удалось получить доступ к камере');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+  };
+
+  const cancelRecording = () => {
+    console.log('🚫 Отмена записи');
+    
+    // ВАЖНО: Устанавливаем флаг отмены ДО остановки записи
+    isCancelledRef.current = true;
+    
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+
+    // Останавливаем камеру
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+
+    // Очищаем видео элемент
+    if (videoRef.current && videoRef.current.srcObject) {
+      videoRef.current.srcObject = null;
+    }
+    
+    // Очищаем контейнер
+    if (videoContainerRef.current) {
+      videoContainerRef.current.innerHTML = '';
+    }
+    
+    videoRef.current = null;
+
+    setShowRecordingModal(false);
+    setRecordingTime(0);
+    
+    // Уведомляем родителя
+    if (onCancel) {
+      onCancel();
+    }
+  };
+
+  const uploadVideoNote = async (blob) => {
+    try {
+      const file = new File([blob], `video_note_${Date.now()}.webm`, { type: 'video/webm' });
+      
+      console.log('📤 Загрузка кружочка...', file.name);
+      const response = await uploadAPI.uploadWebFile(file);
+      console.log('📥 Ответ сервера:', response.data);
+      
+      // Получаем URL - может быть response.data.url или response.data.file.url
+      const fileUrl = response.data.file?.url || response.data.url;
+      
+      if (!fileUrl) {
+        console.error('❌ URL файла не найден в ответе:', response.data);
+        Alert.alert('Ошибка', 'Не удалось получить URL видео');
+        return;
+      }
+      
+      console.log('✅ Кружочек загружен:', fileUrl);
+      
+      if (onVideoNoteSelected) {
+        onVideoNoteSelected({
+          url: fileUrl,
+          name: file.name,
+          size: file.size,
+          type: 'video_note'
+        });
+      }
+    } catch (error) {
+      console.error('❌ Ошибка загрузки кружочка:', error);
+      Alert.alert('Ошибка', 'Не удалось загрузить видео');
+    }
+  };
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <>
+      <Modal
+        visible={showRecordingModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={cancelRecording}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.recordingContainer}>
+            <View style={styles.videoContainer}>
+              {Platform.OS === 'web' && (
+                <div ref={videoContainerRef} style={{ width: '100%', height: '100%' }} />
+              )}
+            </View>
+            <View style={styles.controls}>
+              <Text style={styles.timer}>{formatTime(recordingTime)}</Text>
+              <Text style={styles.maxTime}>/ 1:00</Text>
+            </View>
+
+            <View style={styles.buttons}>
+              <TouchableOpacity
+                style={[styles.controlButton, styles.cancelButton]}
+                onPress={cancelRecording}
+              >
+                <Text style={styles.controlButtonText}>✕</Text>
+              </TouchableOpacity>
+
+              {isRecording && (
+                <TouchableOpacity
+                  style={[styles.controlButton, styles.stopButton]}
+                  onPress={stopRecording}
+                >
+                  <Text style={styles.controlButtonText}>■</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <Text style={styles.hint}>
+              {isRecording ? '⏺ Запись...' : 'Подготовка...'}
+            </Text>
+          </View>
+        </View>
+      </Modal>
+    </>
+  );
+});
+
+const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  recordingContainer: {
+    alignItems: 'center'
+  },
+  videoContainer: {
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    overflow: 'hidden',
+    backgroundColor: '#000',
+    marginBottom: 30
+  },
+  controls: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 30
+  },
+  timer: {
+    fontSize: 48,
+    color: '#fff',
+    fontWeight: 'bold',
+    fontFamily: 'monospace'
+  },
+  maxTime: {
+    fontSize: 24,
+    color: '#999',
+    marginLeft: 8
+  },
+  buttons: {
+    flexDirection: 'row',
+    marginBottom: 20
+  },
+  controlButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 10
+  },
+  cancelButton: {
+    backgroundColor: '#666'
+  },
+  stopButton: {
+    backgroundColor: '#FF3B30'
+  },
+  controlButtonText: {
+    fontSize: 30,
+    color: '#fff',
+    fontWeight: 'bold'
+  },
+  hint: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 10
+  }
+});
+
+export default VideoNotePicker;

@@ -105,7 +105,7 @@ module.exports = (io) => {
           file_url,
           file_name,
           file_size,
-          // reply_to_id: reply_to, // Временно отключено до создания колонки
+          reply_to_id: reply_to || null,
           status: 'sent'
         });
 
@@ -127,17 +127,17 @@ module.exports = (io) => {
               model: User,
               as: 'sender',
               attributes: ['id', 'username', 'avatar_url']
+            },
+            {
+              model: Message,
+              as: 'reply_to',
+              attributes: ['id', 'content', 'type', 'file_url'],
+              include: [{
+                model: User,
+                as: 'sender',
+                attributes: ['id', 'username']
+              }]
             }
-            // Reply временно отключено до создания колонки
-            // {
-            //   model: Message,
-            //   as: 'reply_to',
-            //   include: [{
-            //     model: User,
-            //     as: 'sender',
-            //     attributes: ['id', 'username']
-            //   }]
-            // }
           ]
         });
 

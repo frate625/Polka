@@ -15,11 +15,23 @@ const getChatMessages = async (req, res) => {
 
     const messages = await Message.findAll({
       where: { chat_id: id },
-      include: [{
-        model: User,
-        as: 'sender',
-        attributes: ['id', 'username', 'avatar_url']
-      }],
+      include: [
+        {
+          model: User,
+          as: 'sender',
+          attributes: ['id', 'username', 'avatar_url']
+        },
+        {
+          model: Message,
+          as: 'reply_to',
+          attributes: ['id', 'content', 'type', 'file_url'],
+          include: [{
+            model: User,
+            as: 'sender',
+            attributes: ['id', 'username']
+          }]
+        }
+      ],
       order: [['created_at', 'DESC']],
       limit: parseInt(limit),
       offset: parseInt(offset)

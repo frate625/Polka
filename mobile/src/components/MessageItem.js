@@ -290,7 +290,12 @@ export default function MessageItem({ message, isOwnMessage, onLongPress }) {
                 {message.reply_to.sender?.username || 'Пользователь'}
               </Text>
               <Text style={[styles.replyText, isOwnMessage && styles.ownTextSecondary]} numberOfLines={1}>
-                {message.reply_to.content || 'Медиа'}
+                {message.reply_to.type === 'image' ? '📷 Фото' :
+                 message.reply_to.type === 'voice' ? '🎤 Аудио' :
+                 message.reply_to.type === 'video_note' ? '⭕ Видеосообщение' :
+                 message.reply_to.type === 'video' ? '🎥 Видео' :
+                 message.reply_to.type === 'file' ? '📎 Файл' :
+                 message.reply_to.content || 'Сообщение'}
               </Text>
             </View>
           </View>

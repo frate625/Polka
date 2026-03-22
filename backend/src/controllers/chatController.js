@@ -3,14 +3,21 @@ const { Op } = require('sequelize');
 
 const getUserChats = async (req, res) => {
   try {
+    // Сначала получаем ID чатов где участвует пользователь
+    const userChatMembers = await ChatMember.findAll({
+      where: { user_id: req.userId },
+      attributes: ['chat_id', 'unread_count']
+    });
+
+    const chatIds = userChatMembers.map(m => m.chat_id);
+
+    // Затем получаем полные данные этих чатов со ВСЕМИ участниками
     const chats = await Chat.findAll({
+      where: { id: { [Op.in]: chatIds } },
       include: [
         {
           model: User,
           as: 'members',
-          through: {
-            where: { user_id: req.userId }
-          },
           attributes: ['id', 'username', 'avatar_url', 'is_online']
         },
         {
@@ -28,12 +35,8 @@ const getUserChats = async (req, res) => {
       order: [['last_message_at', 'DESC NULLS LAST']]
     });
 
-    const chatMembers = await ChatMember.findAll({
-      where: { user_id: req.userId }
-    });
-
     const chatsWithUnread = chats.map(chat => {
-      const member = chatMembers.find(m => m.chat_id === chat.id);
+      const member = userChatMembers.find(m => m.chat_id === chat.id);
       return {
         ...chat.toJSON(),
         unread_count: member ? member.unread_count : 0

@@ -13,12 +13,14 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { chatAPI } from '../services/api';
 import { useSocket } from '../store/SocketContext';
 import { useTheme } from '../store/ThemeContext';
+import { useAuth } from '../store/AuthContext';
 import ChatItem from '../components/ChatItem';
 
 export default function ChatsListScreen() {
   const navigation = useNavigation();
   const { socket } = useSocket();
   const { theme } = useTheme();
+  const { user: currentUser } = useAuth();
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -61,7 +63,19 @@ export default function ChatsListScreen() {
     try {
       setLoading(true);
       const response = await chatAPI.getChats();
-      setChats(response.data.chats || []);
+      const allChats = response.data.chats || [];
+      
+      // Фильтруем "Избранное" (чаты где единственный участник - сам пользователь)
+      const filteredChats = allChats.filter(chat => {
+        if (chat.type === 'group') return true;
+        if (chat.type === 'private' && chat.members && chat.members.length === 1) {
+          // Скрываем чаты только с самим собой (Избранное)
+          return false;
+        }
+        return true;
+      });
+      
+      setChats(filteredChats);
     } catch (error) {
       console.error('Ошибка загрузки чатов:', error);
       Alert.alert('Ошибка', 'Не удалось загрузить чаты');
@@ -102,7 +116,7 @@ export default function ChatsListScreen() {
   const openChat = (chat) => {
     const chatName = chat.type === 'group'
       ? chat.name
-      : chat.members?.find(m => m.id !== chat.user_id)?.username || 'Чат';
+      : chat.members?.find(m => m.id !== currentUser?.id)?.username || 'Чат';
 
     navigation.navigate('Chat', {
       chatId: chat.id,
@@ -139,7 +153,7 @@ export default function ChatsListScreen() {
         data={chats}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <ChatItem chat={item} onPress={() => openChat(item)} theme={theme} />
+          <ChatItem chat={item} currentUser={currentUser} onPress={() => openChat(item)} theme={theme} />
         )}
         ListHeaderComponent={
           <TouchableOpacity style={[styles.savedMessagesButton, { backgroundColor: theme.colors.card, borderBottomColor: theme.colors.border }]} onPress={openSavedMessages}>

@@ -11,6 +11,7 @@ import CreateGroupScreen from '../screens/CreateGroupScreen';
 import GroupManageScreen from '../screens/GroupManageScreen';
 import SearchScreen from '../screens/SearchScreen';
 import ChatInfoScreen from '../screens/ChatInfoScreen';
+import UserProfileScreen from '../screens/UserProfileScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -53,6 +54,11 @@ function ChatsStack() {
         name="ChatInfo"
         component={ChatInfoScreen}
         options={({ route }) => ({ title: route.params?.chatName || 'Информация' })}
+      />
+      <Stack.Screen
+        name="UserProfile"
+        component={UserProfileScreen}
+        options={({ route }) => ({ title: route.params?.userName || 'Профиль' })}
       />
     </Stack.Navigator>
   );

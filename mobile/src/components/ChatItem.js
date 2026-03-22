@@ -1,14 +1,53 @@
 // Компонент для отображения элемента чата в списке
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { getBaseUrl } from '../services/api';
 
-export default function ChatItem({ chat, onPress, theme }) {
+export default function ChatItem({ chat, currentUser, onPress, theme }) {
+  // Определение собеседника для личных чатов
+  const otherUser = chat.type === 'private' 
+    ? chat.members?.find(m => m.id !== currentUser?.id)
+    : null;
+  
+  // Имя чата
+  const chatName = chat.type === 'group' 
+    ? chat.name 
+    : (otherUser?.username || 'Чат');
+  
+  // Аватар для личных чатов
+  const avatarUrl = chat.type === 'private' && otherUser?.avatar_url
+    ? (otherUser.avatar_url.startsWith('http') 
+        ? otherUser.avatar_url 
+        : `${getBaseUrl()}${otherUser.avatar_url}`)
+    : null;
+  
   // Получение последнего сообщения
   const lastMessage = chat.messages?.[0];
-  const lastMessageText = lastMessage?.content || 'Нет сообщений';
+  
+  // Форматирование последнего сообщения в зависимости от типа
+  const getLastMessageText = () => {
+    if (!lastMessage) return 'Нет сообщений';
+    
+    switch (lastMessage.type) {
+      case 'image':
+        return '📷 Фото';
+      case 'voice':
+        return '🎤 Аудиосообщение';
+      case 'video_note':
+        return '⭕ Видеосообщение';
+      case 'video':
+        return '🎥 Видео';
+      case 'file':
+        return '📎 Файл';
+      default:
+        return lastMessage.content || 'Нет сообщений';
+    }
+  };
+  
+  const lastMessageText = getLastMessageText();
   
   // Проверка онлайн статуса (для приватных чатов)
-  const isOnline = chat.type === 'private' && chat.members?.some(m => m.is_online);
+  const isOnline = chat.type === 'private' && otherUser?.is_online;
   
   // Форматирование времени
   const formatTime = (dateString) => {
@@ -34,17 +73,21 @@ export default function ChatItem({ chat, onPress, theme }) {
   return (
     <TouchableOpacity style={[styles.container, { backgroundColor: bgColor, borderBottomColor: borderColor }]} onPress={onPress}>
       <View style={styles.avatarContainer}>
-        <View style={[styles.avatar, { backgroundColor: primaryColor }]}>
-          <Text style={styles.avatarText}>
-            {chat.name?.[0]?.toUpperCase() || chat.members?.[0]?.username?.[0]?.toUpperCase() || '?'}
-          </Text>
-        </View>
+        {avatarUrl ? (
+          <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+        ) : (
+          <View style={[styles.avatar, { backgroundColor: primaryColor }]}>
+            <Text style={styles.avatarText}>
+              {chatName?.[0]?.toUpperCase() || '?'}
+            </Text>
+          </View>
+        )}
         {isOnline && <View style={[styles.onlineIndicator, { borderColor: bgColor }]} />}
       </View>
       <View style={styles.content}>
         <View style={styles.header}>
           <Text style={[styles.name, { color: textColor }]} numberOfLines={1}>
-            {chat.name || chat.members?.find(m => m.id !== chat.user_id)?.username || 'Чат'}
+            {chatName}
           </Text>
           <Text style={[styles.time, { color: secondaryTextColor }]}>
             {formatTime(chat.last_message_at)}

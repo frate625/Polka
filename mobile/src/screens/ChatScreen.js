@@ -13,7 +13,7 @@ import {
   Modal
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { messageAPI } from '../services/api';
+import { messageAPI, chatAPI } from '../services/api';
 import { useSocket } from '../store/SocketContext';
 import { useAuth } from '../store/AuthContext';
 import { useTheme } from '../store/ThemeContext';
@@ -40,6 +40,8 @@ export default function ChatScreen() {
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [showMessageMenu, setShowMessageMenu] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showForwardModal, setShowForwardModal] = useState(false);
+  const [forwardChats, setForwardChats] = useState([]);
   const flatListRef = useRef(null);
   const typingTimeout = useRef(null);
 
@@ -63,6 +65,23 @@ export default function ChatScreen() {
   // Настройка header с кнопками
   useEffect(() => {
     navigation.setOptions({
+      headerTitle: () => (
+        <TouchableOpacity
+          onPress={() => {
+            if (chatType === 'personal' && recipientId) {
+              navigation.navigate('UserProfile', {
+                userId: recipientId,
+                userName: chatName
+              });
+            }
+          }}
+          disabled={chatType !== 'personal'}
+        >
+          <Text style={{ fontSize: 17, fontWeight: '600', color: '#000' }}>
+            {chatName}
+          </Text>
+        </TouchableOpacity>
+      ),
       headerRight: () => (
         <View style={{ flexDirection: 'row', marginRight: 10 }}>
           {/* Кнопки звонков (только для персональных чатов) */}
@@ -105,7 +124,7 @@ export default function ChatScreen() {
         </View>
       )
     });
-  }, [chatType, chatId, chatMembers, chatName]);
+  }, [chatType, chatId, chatMembers, chatName, recipientId]);
 
   // Загрузка сообщений при открытии чата
   useEffect(() => {
@@ -301,6 +320,39 @@ export default function ChatScreen() {
     setSelectedMessage(null);
   };
 
+  // Переслать сообщение
+  const handleForward = async () => {
+    setShowMessageMenu(false);
+    try {
+      const response = await chatAPI.getChats();
+      const chats = response.data.chats || [];
+      setForwardChats(chats.filter(c => c.id !== chatId));
+      setShowForwardModal(true);
+    } catch (error) {
+      console.error('Ошибка загрузки чатов:', error);
+      Alert.alert('Ошибка', 'Не удалось загрузить список чатов');
+    }
+  };
+
+  // Переслать в выбранный чат
+  const forwardToChat = (targetChatId) => {
+    if (!selectedMessage) return;
+    
+    const messageData = {
+      content: selectedMessage.content,
+      type: selectedMessage.type,
+      file_url: selectedMessage.file_url
+    };
+    
+    socket.sendMessage(targetChatId, messageData.content, messageData.type, {
+      file_url: messageData.file_url
+    });
+    
+    setShowForwardModal(false);
+    setSelectedMessage(null);
+    Alert.alert('Успешно', 'Сообщение переслано');
+  };
+
   // Редактировать сообщение
   const handleEdit = () => {
     if (selectedMessage.sender_id !== user.id) {
@@ -441,6 +493,10 @@ export default function ChatScreen() {
               <Text style={styles.menuIcon}>↩️</Text>
               <Text style={[styles.menuText, { color: theme.colors.text }]}>Ответить</Text>
             </TouchableOpacity>
+            <TouchableOpacity style={[styles.menuItem, { borderBottomColor: theme.colors.border }]} onPress={handleForward}>
+              <Text style={styles.menuIcon}>➡️</Text>
+              <Text style={[styles.menuText, { color: theme.colors.text }]}>Переслать</Text>
+            </TouchableOpacity>
             {selectedMessage?.sender_id === user.id && (<><TouchableOpacity style={[styles.menuItem, { borderBottomColor: theme.colors.border }]} onPress={handleEdit}>
 <Text style={styles.menuIcon}>✏️</Text>
 <Text style={[styles.menuText, { color: theme.colors.text }]}>Редактировать</Text>
@@ -511,6 +567,55 @@ setShowDeleteModal(false);
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
+      </Modal>
+      {/* Модал пересылки сообщения */}
+      <Modal
+        visible={showForwardModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowForwardModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.forwardModalContainer, { backgroundColor: theme.colors.card }]}>
+            <View style={[styles.forwardModalHeader, { borderBottomColor: theme.colors.border }]}>
+              <Text style={[styles.forwardModalTitle, { color: theme.colors.text }]}>
+                Переслать сообщение
+              </Text>
+              <TouchableOpacity onPress={() => setShowForwardModal(false)}>
+                <Text style={{ fontSize: 24, color: theme.colors.secondaryText }}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={forwardChats}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => {
+                const chatName = item.type === 'group'
+                  ? item.name
+                  : item.members?.find(m => m.id !== user.id)?.username || 'Чат';
+                return (
+                  <TouchableOpacity
+                    style={[styles.forwardChatItem, { borderBottomColor: theme.colors.border }]}
+                    onPress={() => forwardToChat(item.id)}
+                  >
+                    <View style={[styles.forwardChatAvatar, { backgroundColor: theme.colors.primary }]}>
+                      <Text style={styles.forwardChatAvatarText}>
+                        {chatName?.[0]?.toUpperCase() || '?'}
+                      </Text>
+                    </View>
+                    <Text style={[styles.forwardChatName, { color: theme.colors.text }]}>
+                      {chatName}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              }}
+              ListEmptyComponent={
+                <Text style={[styles.forwardEmptyText, { color: theme.colors.secondaryText }]}>
+                  Нет доступных чатов
+                </Text>
+              }
+            />
+          </View>
+        </View>
       </Modal>
       {/* Экран звонка */}
       <CallScreen
@@ -688,5 +793,56 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#fff'
+  },
+  forwardModalContainer: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '70%',
+    marginTop: 'auto'
+  },
+  forwardModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0'
+  },
+  forwardModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000'
+  },
+  forwardChatItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0'
+  },
+  forwardChatAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12
+  },
+  forwardChatAvatarText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600'
+  },
+  forwardChatName: {
+    fontSize: 16,
+    color: '#000'
+  },
+  forwardEmptyText: {
+    textAlign: 'center',
+    padding: 40,
+    fontSize: 16,
+    color: '#999'
   }
 });

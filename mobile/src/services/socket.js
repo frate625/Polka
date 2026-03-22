@@ -4,23 +4,27 @@ import { Platform } from 'react-native';
 
 // Определяем URL в зависимости от того, откуда открыто
 const getSocketUrl = () => {
-  // Production URL (если установлена переменная окружения)
-  if (process.env.REACT_APP_BACKEND_URL) {
-    return process.env.REACT_APP_BACKEND_URL;
-  }
-
   if (Platform.OS === 'web') {
-    // Проверяем hostname - если localhost, значит на компьютере, иначе на телефоне
-    if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-      return 'http://localhost:3000';
-    } else {
-      // Веб открыто на телефоне по IP - используем тот же IP для Backend
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      
+      // Production (Vercel)
+      if (hostname.includes('vercel.app')) {
+        return 'https://polka-production.up.railway.app';
+      }
+      
+      // Localhost
+      if (hostname === 'localhost') {
+        return 'http://localhost:3000';
+      }
+      
+      // Локальная сеть (IP адрес)
       return 'http://10.0.1.9:3000';
     }
-  } else {
-    // Для мобильных устройств используем IP компьютера
-    return 'http://10.0.1.9:3000';
   }
+  
+  // Для мобильных устройств используем IP компьютера
+  return 'http://10.0.1.9:3000';
 };
 
 const SOCKET_URL = getSocketUrl();

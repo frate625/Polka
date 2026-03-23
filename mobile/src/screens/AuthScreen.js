@@ -17,37 +17,16 @@ import api from '../services/api';
 export default function AuthScreen() {
   const { login, register } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [isVerifyEmail, setIsVerifyEmail] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [username, setUsername] = useState('');
   const [phone, setPhone] = useState('');
+  const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
-  const [apiStatus, setApiStatus] = useState('');
-
-  // Проверка подключения к Backend при загрузке
-  React.useEffect(() => {
-    // Показываем какой API URL используется
-    const apiBaseUrl = api.defaults.baseURL;
-    console.log('API Base URL:', apiBaseUrl);
-    setApiStatus('API: ' + apiBaseUrl);
-  }, []);
-
-  const checkBackendConnection = async () => {
-    try {
-      const backendUrl = api.defaults.baseURL.replace('/api', '');
-      console.log('Проверка подключения к:', backendUrl);
-      const response = await fetch(backendUrl, { method: 'GET' });
-      const data = await response.json();
-      console.log('Ответ Backend:', data);
-      if (data.message) {
-        setApiStatus('✅ Подключено: ' + backendUrl);
-      }
-    } catch (error) {
-      const backendUrl = api.defaults.baseURL.replace('/api', '');
-      setApiStatus('❌ Не удается подключиться: ' + backendUrl);
-      console.error('Backend connection error:', error);
-    }
-  };
+  const [pendingRegistration, setPendingRegistration] = useState(null);
 
   // Обработка входа
   const handleLogin = async () => {
@@ -65,43 +44,326 @@ export default function AuthScreen() {
     }
   };
 
-  // Обработка регистрации
+  // Обработка регистрации (отправка кода на email)
   const handleRegister = async () => {
     if (!email || !password || !username) {
-      Alert.alert('Ошибка', 'Заполните обязательные поля');
+      if (Platform.OS === 'web') {
+        alert('Заполните обязательные поля');
+      } else {
+        Alert.alert('Ошибка', 'Заполните обязательные поля');
+      }
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert('Ошибка', 'Пароль должен быть не менее 6 символов');
+      if (Platform.OS === 'web') {
+        alert('Пароль должен быть не менее 6 символов');
+      } else {
+        Alert.alert('Ошибка', 'Пароль должен быть не менее 6 символов');
+      }
       return;
     }
 
     setLoading(true);
-    const result = await register(username, email, password, phone);
-    setLoading(false);
-
-    if (!result.success) {
-      Alert.alert('Ошибка регистрации', result.error);
+    try {
+      const response = await api.post('/auth/send-verification-code', { 
+        email, 
+        username, 
+        password, 
+        phone 
+      });
+      setLoading(false);
+      
+      if (response.data.success) {
+        setPendingRegistration({ username, email, password, phone });
+        setIsVerifyEmail(true);
+        if (Platform.OS === 'web') {
+          alert('Код подтверждения отправлен на вашу почту');
+        } else {
+          Alert.alert('Успешно', 'Код подтверждения отправлен на вашу почту');
+        }
+      }
+    } catch (error) {
+      setLoading(false);
+      const errorMsg = error.response?.data?.error || 'Ошибка отправки кода';
+      if (Platform.OS === 'web') {
+        alert(errorMsg);
+      } else {
+        Alert.alert('Ошибка', errorMsg);
+      }
     }
   };
 
+  // Подтверждение email и завершение регистрации
+  const handleVerifyEmail = async () => {
+    if (!code || code.length !== 6) {
+      if (Platform.OS === 'web') {
+        alert('Введите 6-значный код');
+      } else {
+        Alert.alert('Ошибка', 'Введите 6-значный код');
+      }
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await api.post('/auth/verify-email', {
+        email: pendingRegistration.email,
+        code
+      });
+      
+      if (response.data.success) {
+        // Завершаем регистрацию
+        const result = await register(
+          pendingRegistration.username,
+          pendingRegistration.email,
+          pendingRegistration.password,
+          pendingRegistration.phone
+        );
+        setLoading(false);
+        
+        if (!result.success) {
+          if (Platform.OS === 'web') {
+            alert(result.error || 'Ошибка регистрации');
+          } else {
+            Alert.alert('Ошибка регистрации', result.error);
+          }
+        }
+      }
+    } catch (error) {
+      setLoading(false);
+      const errorMsg = error.response?.data?.error || 'Неверный код';
+      if (Platform.OS === 'web') {
+        alert(errorMsg);
+      } else {
+        Alert.alert('Ошибка', errorMsg);
+      }
+    }
+  };
+
+  // Отправка кода для восстановления пароля
+  const handleForgotPassword = async () => {
+    if (!email) {
+      if (Platform.OS === 'web') {
+        alert('Введите email');
+      } else {
+        Alert.alert('Ошибка', 'Введите email');
+      }
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await api.post('/auth/forgot-password', { email });
+      setLoading(false);
+      
+      if (response.data.success) {
+        if (Platform.OS === 'web') {
+          alert('Код восстановления отправлен на вашу почту');
+        } else {
+          Alert.alert('Успешно', 'Код восстановления отправлен на вашу почту');
+        }
+      }
+    } catch (error) {
+      setLoading(false);
+      const errorMsg = error.response?.data?.error || 'Ошибка отправки кода';
+      if (Platform.OS === 'web') {
+        alert(errorMsg);
+      } else {
+        Alert.alert('Ошибка', errorMsg);
+      }
+    }
+  };
+
+  // Сброс пароля с кодом
+  const handleResetPassword = async () => {
+    if (!code || code.length !== 6) {
+      if (Platform.OS === 'web') {
+        alert('Введите 6-значный код');
+      } else {
+        Alert.alert('Ошибка', 'Введите 6-значный код');
+      }
+      return;
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      if (Platform.OS === 'web') {
+        alert('Пароль должен быть не менее 6 символов');
+      } else {
+        Alert.alert('Ошибка', 'Пароль должен быть не менее 6 символов');
+      }
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await api.post('/auth/reset-password', {
+        email,
+        code,
+        newPassword
+      });
+      setLoading(false);
+      
+      if (response.data.success) {
+        if (Platform.OS === 'web') {
+          alert('Пароль успешно изменен');
+        } else {
+          Alert.alert('Успешно', 'Пароль успешно изменен');
+        }
+        setIsForgotPassword(false);
+        setCode('');
+        setNewPassword('');
+        setEmail('');
+      }
+    } catch (error) {
+      setLoading(false);
+      const errorMsg = error.response?.data?.error || 'Ошибка сброса пароля';
+      if (Platform.OS === 'web') {
+        alert(errorMsg);
+      } else {
+        Alert.alert('Ошибка', errorMsg);
+      }
+    }
+  };
+
+  // Форма подтверждения email
+  if (isVerifyEmail) {
+    return (
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Polka</Text>
+            <Text style={styles.subtitle}>Подтвердите email</Text>
+            <Text style={styles.infoText}>
+              Введите 6-значный код, отправленный на {pendingRegistration?.email}
+            </Text>
+          </View>
+
+          <View style={styles.form}>
+            <TextInput
+              style={styles.input}
+              placeholder="Код подтверждения"
+              value={code}
+              onChangeText={setCode}
+              keyboardType="number-pad"
+              maxLength={6}
+            />
+
+            <TouchableOpacity
+              style={[styles.button, loading && styles.buttonDisabled]}
+              onPress={handleVerifyEmail}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>
+                {loading ? 'Проверка...' : 'Подтвердить'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.switchButton}
+              onPress={() => {
+                setIsVerifyEmail(false);
+                setCode('');
+                setPendingRegistration(null);
+              }}
+            >
+              <Text style={styles.switchText}>Назад</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
+
+  // Форма восстановления пароля
+  if (isForgotPassword) {
+    return (
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Polka</Text>
+            <Text style={styles.subtitle}>Восстановление пароля</Text>
+          </View>
+
+          <View style={styles.form}>
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+
+            {!code && (
+              <TouchableOpacity
+                style={[styles.button, loading && styles.buttonDisabled]}
+                onPress={handleForgotPassword}
+                disabled={loading}
+              >
+                <Text style={styles.buttonText}>
+                  {loading ? 'Отправка...' : 'Отправить код'}
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {code.length > 0 && (
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Код подтверждения"
+                  value={code}
+                  onChangeText={setCode}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                />
+
+                <TextInput
+                  style={styles.input}
+                  placeholder="Новый пароль"
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  secureTextEntry
+                />
+
+                <TouchableOpacity
+                  style={[styles.button, loading && styles.buttonDisabled]}
+                  onPress={handleResetPassword}
+                  disabled={loading}
+                >
+                  <Text style={styles.buttonText}>
+                    {loading ? 'Сохранение...' : 'Восстановить'}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            <TouchableOpacity
+              style={styles.switchButton}
+              onPress={() => {
+                setIsForgotPassword(false);
+                setCode('');
+                setNewPassword('');
+                setEmail('');
+              }}
+            >
+              <Text style={styles.switchText}>Назад к входу</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
+
+  // Основная форма входа/регистрации
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <Text style={styles.title}>Polka</Text>
           <Text style={styles.subtitle}>
             {isLogin ? 'Войдите в аккаунт' : 'Создайте аккаунт'}
           </Text>
-          {apiStatus && (
-            <Text style={[styles.apiStatus, apiStatus.includes('❌') && styles.apiStatusError]}>
-              {apiStatus}
-            </Text>
-          )}
         </View>
 
         <View style={styles.form}>
@@ -163,15 +425,10 @@ export default function AuthScreen() {
 
           {isLogin && (
             <TouchableOpacity
-              style={styles.testButton}
-              onPress={() => {
-                setEmail('alice_new@example.com');
-                setPassword('password123');
-              }}
+              style={styles.forgotButton}
+              onPress={() => setIsForgotPassword(true)}
             >
-              <Text style={styles.testButtonText}>
-                🧪 Заполнить тестовыми данными
-              </Text>
+              <Text style={styles.forgotText}>Забыли пароль?</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -246,15 +503,19 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontSize: 14
   },
-  testButton: {
+  forgotButton: {
     marginTop: 15,
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: '#F0F0F0',
     alignItems: 'center'
   },
-  testButtonText: {
+  forgotText: {
+    color: '#007AFF',
+    fontSize: 14
+  },
+  infoText: {
+    fontSize: 14,
     color: '#666',
-    fontSize: 13
+    marginTop: 10,
+    textAlign: 'center',
+    paddingHorizontal: 20
   }
 });

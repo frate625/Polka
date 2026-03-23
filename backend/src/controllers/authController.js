@@ -11,21 +11,41 @@ const generateCode = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-// Настройка email транспорта (используем Gmail для примера)
-// В production используйте переменные окружения
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER || 'your-email@gmail.com',
-    pass: process.env.EMAIL_PASSWORD || 'your-app-password'
+// Настройка email транспорта (поддержка Gmail и Yandex)
+const getEmailTransporter = () => {
+  const emailUser = process.env.EMAIL_USER;
+  
+  // Определяем провайдера по домену
+  if (emailUser && emailUser.includes('@yandex')) {
+    return nodemailer.createTransport({
+      host: 'smtp.yandex.ru',
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD
+      }
+    });
+  } else if (emailUser && emailUser.includes('@gmail')) {
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD
+      }
+    });
   }
-});
+  
+  return null;
+};
+
+const transporter = getEmailTransporter();
 
 // Функция отправки email
 const sendEmail = async (to, subject, text) => {
   try {
     // Если нет настроек email, просто логируем код в консоль
-    if (!process.env.EMAIL_USER) {
+    if (!process.env.EMAIL_USER || !transporter) {
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       console.log('📧 EMAIL (dev mode):');
       console.log(`To: ${to}`);
@@ -41,9 +61,10 @@ const sendEmail = async (to, subject, text) => {
       subject,
       text
     });
+    console.log(`✅ Email отправлен: ${to}`);
     return { success: true };
   } catch (error) {
-    console.error('Email send error:', error);
+    console.error('❌ Email send error:', error);
     // В dev режиме все равно продолжаем и логируем код
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('📧 EMAIL (fallback):');

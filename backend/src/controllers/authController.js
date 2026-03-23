@@ -18,7 +18,7 @@ const register = async (req, res) => {
     const user = await User.create({
       username,
       email,
-      phone,
+      phone: phone && phone.trim() ? phone : null, // Конвертируем пустую строку в null
       password_hash: password
     });
 

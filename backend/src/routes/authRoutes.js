@@ -7,9 +7,5 @@ const authMiddleware = require('../middleware/auth');
 router.post('/register', registerValidation, authController.register);
 router.post('/login', loginValidation, authController.login);
 router.post('/logout', authMiddleware, authController.logout);
-router.post('/send-verification-code', authController.sendVerificationCode);
-router.post('/verify-email', authController.verifyEmail);
-router.post('/forgot-password', authController.forgotPassword);
-router.post('/reset-password', authController.resetPassword);
 
 module.exports = router;

@@ -24,6 +24,7 @@ export default function ProfileScreen() {
   const [status, setStatus] = useState(user?.status || '');
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || '');
   const [loading, setLoading] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   // Выбор аватара
   const pickAvatar = async () => {
@@ -147,15 +148,42 @@ export default function ProfileScreen() {
   };
 
   // Выход из аккаунта
-  const handleLogout = () => {
-    Alert.alert(
-      'Выход',
-      'Вы уверены, что хотите выйти?',
-      [
-        { text: 'Отмена', style: 'cancel' },
-        { text: 'Выйти', onPress: logout, style: 'destructive' }
-      ]
-    );
+  const handleLogout = async () => {
+    // Для Web используем confirm, для мобильных - Alert
+    if (Platform.OS === 'web') {
+      if (window.confirm('Вы уверены, что хотите выйти из аккаунта?')) {
+        try {
+          setLoggingOut(true);
+          console.log('🚪 Начинается выход из аккаунта...');
+          await logout();
+          console.log('✅ Выход выполнен успешно');
+        } catch (error) {
+          console.error('❌ Ошибка при выходе:', error);
+          setLoggingOut(false);
+        }
+      }
+    } else {
+      Alert.alert(
+        'Выход',
+        'Вы уверены, что хотите выйти?',
+        [
+          { text: 'Отмена', style: 'cancel' },
+          { 
+            text: 'Выйти', 
+            onPress: async () => {
+              try {
+                setLoggingOut(true);
+                await logout();
+              } catch (error) {
+                console.error('Ошибка при выходе:', error);
+                setLoggingOut(false);
+              }
+            }, 
+            style: 'destructive' 
+          }
+        ]
+      );
+    }
   };
 
   return (
@@ -278,10 +306,13 @@ export default function ProfileScreen() {
       )}
 
       <TouchableOpacity
-        style={[styles.button, { backgroundColor: theme.colors.error }]}
+        style={[styles.button, { backgroundColor: theme.colors.error }, (loggingOut || loading) && styles.buttonDisabled]}
         onPress={handleLogout}
+        disabled={loggingOut || loading}
       >
-        <Text style={styles.logoutButtonText}>Выйти</Text>
+        <Text style={styles.logoutButtonText}>
+          {loggingOut ? 'Выход...' : 'Выйти'}
+        </Text>
       </TouchableOpacity>
     </ScrollView>
   );

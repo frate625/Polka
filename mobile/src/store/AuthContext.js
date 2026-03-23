@@ -90,15 +90,40 @@ export const AuthProvider = ({ children }) => {
   // Выход пользователя
   const logout = async () => {
     try {
-      await authAPI.logout();
-    } catch (error) {
-      console.error('Ошибка выхода:', error);
-    } finally {
+      console.log('🚪 Logout: начало процесса выхода');
+      // Пытаемся вызвать API logout (но не критично если упадёт)
+      try {
+        await authAPI.logout();
+        console.log('✅ Logout: API logout успешно');
+      } catch (apiError) {
+        console.warn('⚠️ Logout: API logout не удался, но продолжаем:', apiError.message);
+      }
+      
+      // Очищаем локальные данные (это важно!)
+      console.log('🗑️ Logout: очистка AsyncStorage');
       await AsyncStorage.removeItem('authToken');
       await AsyncStorage.removeItem('user');
+      
+      // Обновляем состояние
+      console.log('📝 Logout: обновление состояния');
       setToken(null);
       setUser(null);
       setIsAuthenticated(false);
+      
+      console.log('✅ Logout: завершено успешно');
+    } catch (error) {
+      console.error('❌ Logout: критическая ошибка:', error);
+      // Даже если что-то пошло не так, пытаемся очистить
+      try {
+        await AsyncStorage.removeItem('authToken');
+        await AsyncStorage.removeItem('user');
+        setToken(null);
+        setUser(null);
+        setIsAuthenticated(false);
+      } catch (cleanupError) {
+        console.error('❌ Logout: ошибка при очистке:', cleanupError);
+      }
+      throw error; // Пробрасываем ошибку, чтобы UI знал
     }
   };
 

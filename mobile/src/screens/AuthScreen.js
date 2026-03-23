@@ -44,7 +44,7 @@ export default function AuthScreen() {
     }
   };
 
-  // Обработка регистрации (отправка кода на email)
+  // Обработка регистрации (без подтверждения email)
   const handleRegister = async () => {
     if (!email || !password || !username) {
       if (Platform.OS === 'web') {
@@ -65,31 +65,14 @@ export default function AuthScreen() {
     }
 
     setLoading(true);
-    try {
-      const response = await api.post('/auth/send-verification-code', { 
-        email, 
-        username, 
-        password, 
-        phone 
-      });
-      setLoading(false);
-      
-      if (response.data.success) {
-        setPendingRegistration({ username, email, password, phone });
-        setIsVerifyEmail(true);
-        if (Platform.OS === 'web') {
-          alert('Код подтверждения отправлен на вашу почту');
-        } else {
-          Alert.alert('Успешно', 'Код подтверждения отправлен на вашу почту');
-        }
-      }
-    } catch (error) {
-      setLoading(false);
-      const errorMsg = error.response?.data?.error || 'Ошибка отправки кода';
+    const result = await register(username, email, password, phone);
+    setLoading(false);
+
+    if (!result.success) {
       if (Platform.OS === 'web') {
-        alert(errorMsg);
+        alert(result.error || 'Ошибка регистрации');
       } else {
-        Alert.alert('Ошибка', errorMsg);
+        Alert.alert('Ошибка регистрации', result.error);
       }
     }
   };

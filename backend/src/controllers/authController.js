@@ -19,11 +19,14 @@ const getEmailTransporter = () => {
   if (emailUser && emailUser.includes('@yandex')) {
     return nodemailer.createTransport({
       host: 'smtp.yandex.ru',
-      port: 465,
-      secure: true,
+      port: 587,
+      secure: false,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASSWORD
+      },
+      tls: {
+        rejectUnauthorized: false
       }
     });
   } else if (emailUser && emailUser.includes('@gmail')) {

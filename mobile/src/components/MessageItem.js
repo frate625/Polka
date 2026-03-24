@@ -6,6 +6,15 @@ import { getBaseUrl } from '../services/api';
 export default function MessageItem({ message, isOwnMessage, onLongPress }) {
   const audioRef = useRef(null);
 
+  // Нормализуем URL - заменяем HTTP на HTTPS для production
+  const normalizeUrl = (url) => {
+    if (!url) return url;
+    if (url.includes('polka-production.up.railway.app') && url.startsWith('http://')) {
+      return url.replace('http://', 'https://');
+    }
+    return url;
+  };
+
   const formatTime = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
@@ -100,9 +109,10 @@ export default function MessageItem({ message, isOwnMessage, onLongPress }) {
   const renderContent = () => {
     switch (message.type) {
       case 'image':
+        const imageUrl = normalizeUrl(message.file_url);
         return (
-          <TouchableOpacity onPress={() => openFile(message.file_url)} activeOpacity={0.8}>
-            <Image source={{ uri: message.file_url }} style={styles.image} resizeMode="cover" />
+          <TouchableOpacity onPress={() => openFile(imageUrl)} activeOpacity={0.8}>
+            <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="cover" />
             {message.content && (
               <Text style={[styles.messageText, isOwnMessage && styles.ownText]}>
                 {message.content}
@@ -112,9 +122,11 @@ export default function MessageItem({ message, isOwnMessage, onLongPress }) {
         );
 
       case 'voice':
-        const audioUrl = message.file_url?.startsWith('http') 
-          ? message.file_url 
-          : `${getBaseUrl()}${message.file_url}`;
+        const audioUrl = normalizeUrl(
+          message.file_url?.startsWith('http') 
+            ? message.file_url 
+            : `${getBaseUrl()}${message.file_url}`
+        );
         
         return (
           <View style={styles.voiceContainer}>
@@ -142,8 +154,9 @@ export default function MessageItem({ message, isOwnMessage, onLongPress }) {
         );
 
       case 'video':
+        const videoFileUrl = normalizeUrl(message.file_url);
         return (
-          <TouchableOpacity style={styles.fileContainer} onPress={() => openFile(message.file_url)} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.fileContainer} onPress={() => openFile(videoFileUrl)} activeOpacity={0.7}>
             <Text style={styles.fileIcon}>🎬</Text>
             <View style={styles.fileInfo}>
               <Text style={[styles.fileName, isOwnMessage && styles.ownText]}>
@@ -171,17 +184,19 @@ export default function MessageItem({ message, isOwnMessage, onLongPress }) {
           );
         }
         
-        const videoUrl = message.file_url.startsWith('http') 
-          ? message.file_url 
-          : `${getBaseUrl()}${message.file_url}`;
+        const videoNoteUrl = normalizeUrl(
+          message.file_url.startsWith('http') 
+            ? message.file_url 
+            : `${getBaseUrl()}${message.file_url}`
+        );
         
-        console.log('🎥 Video note URL:', videoUrl);
+        console.log('🎥 Video note URL:', videoNoteUrl);
         
         return (
           <View style={styles.videoNoteContainer}>
             {Platform.OS === 'web' ? (
               <video
-                src={videoUrl}
+                src={videoNoteUrl}
                 autoPlay
                 loop
                 muted
@@ -222,7 +237,7 @@ export default function MessageItem({ message, isOwnMessage, onLongPress }) {
             ) : (
               <TouchableOpacity 
                 style={styles.videoNotePlaceholder}
-                onPress={() => openFile(videoUrl)}
+                onPress={() => openFile(videoNoteUrl)}
               >
                 <Text style={styles.videoNoteIcon}>⭕</Text>
                 <Text style={[styles.videoNoteText, isOwnMessage && styles.ownText]}>
@@ -234,10 +249,11 @@ export default function MessageItem({ message, isOwnMessage, onLongPress }) {
         );
 
       case 'file':
+        const fileUrl = normalizeUrl(message.file_url);
         return (
           <TouchableOpacity
             style={styles.fileContainer}
-            onPress={() => downloadFile(message.file_url, message.file_name)}
+            onPress={() => downloadFile(fileUrl, message.file_name)}
             activeOpacity={0.7}
           >
             <Text style={styles.fileIcon}>{getFileIcon(message.file_name)}</Text>

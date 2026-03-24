@@ -182,25 +182,29 @@ export default function ChatScreen() {
       // Звук только если сообщение не от меня
       if (message.sender_id !== user.id && Platform.OS === 'web') {
         try {
-          // Можно заменить на свой звук: положите файл в assets/sounds/notification.mp3
-          // и используйте: const audio = new Audio(require('../../assets/sounds/notification.mp3'));
-          
-          // Простой notification звук (iOS style)
-          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-          const oscillator = audioContext.createOscillator();
-          const gainNode = audioContext.createGain();
-          
-          oscillator.connect(gainNode);
-          gainNode.connect(audioContext.destination);
-          
-          oscillator.frequency.value = 800;
-          oscillator.type = 'sine';
-          
-          gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-          
-          oscillator.start(audioContext.currentTime);
-          oscillator.stop(audioContext.currentTime + 0.1);
+          // Пытаемся использовать кастомный звук
+          const audio = new Audio('/assets/sounds/notification.mp3');
+          audio.volume = 0.5;
+          audio.play().catch(() => {
+            // Fallback - встроенный звук если файла нет
+            try {
+              const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+              const oscillator = audioContext.createOscillator();
+              const gainNode = audioContext.createGain();
+              
+              oscillator.connect(gainNode);
+              gainNode.connect(audioContext.destination);
+              
+              oscillator.frequency.value = 800;
+              oscillator.type = 'sine';
+              
+              gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+              gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+              
+              oscillator.start(audioContext.currentTime);
+              oscillator.stop(audioContext.currentTime + 0.1);
+            } catch (e) {}
+          });
         } catch (e) {
           console.log('Sound play error:', e);
         }

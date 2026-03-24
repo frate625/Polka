@@ -140,19 +140,24 @@ export default function ChatScreen() {
       socket.socket.emit('message_read', { chatId });
     }
     
-    console.log('👂 Setting up new_message listener for chatId:', chatId);
+    // Регистрируем listeners только ОДИН раз при монтировании
+    console.log('👂 Setting up listeners (only once)');
+    
+    const handleError = (error) => {
+      console.error('❌ Socket error:', error);
+      Alert.alert('Ошибка', error.message || 'Произошла ошибка');
+    };
+    
     socket.on('new_message', handleNewMessage);
     socket.on('message_edited', handleMessageEdited);
     socket.on('message_deleted', handleMessageDeleted);
     socket.on('reaction_added', handleReactionAdded);
     socket.on('user_typing', handleUserTyping);
     socket.on('user_stopped_typing', handleUserStoppedTyping);
-    socket.on('error', (error) => {
-      console.error('❌ Socket error:', error);
-      Alert.alert('Ошибка', error.message || 'Произошла ошибка');
-    });
+    socket.on('error', handleError);
 
     return () => {
+      console.log('🔌 Cleaning up listeners and leaving chat');
       socket.leaveChat(chatId);
       socket.off('new_message', handleNewMessage);
       socket.off('message_edited', handleMessageEdited);
@@ -160,9 +165,9 @@ export default function ChatScreen() {
       socket.off('reaction_added', handleReactionAdded);
       socket.off('user_typing', handleUserTyping);
       socket.off('user_stopped_typing', handleUserStoppedTyping);
-      socket.off('error');
+      socket.off('error', handleError);
     };
-  }, [chatId]);
+  }, []);
 
   const loadMessages = async () => {
     try {

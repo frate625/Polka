@@ -177,26 +177,35 @@ export default function ChatScreen() {
     }
   };
 
+  // Используем useRef для хранения текущего chatId, чтобы избежать пересоздания колбэков
+  const chatIdRef = useRef(chatId);
+  const userIdRef = useRef(user.id);
+  
+  useEffect(() => {
+    chatIdRef.current = chatId;
+    userIdRef.current = user.id;
+  }, [chatId, user.id]);
+
   const handleNewMessage = useCallback((message) => {
     console.log('🔔 Получено событие new_message:', {
       messageChatId: message.chat_id,
       messageChatIdType: typeof message.chat_id,
-      currentChatId: chatId,
-      currentChatIdType: typeof chatId,
-      matches: String(message.chat_id) === String(chatId),
+      currentChatId: chatIdRef.current,
+      currentChatIdType: typeof chatIdRef.current,
+      matches: String(message.chat_id) === String(chatIdRef.current),
       messageId: message.id,
       senderId: message.sender_id,
       content: message.content?.substring(0, 30)
     });
     
     // Приводим к строке для сравнения
-    if (String(message.chat_id) === String(chatId)) {
+    if (String(message.chat_id) === String(chatIdRef.current)) {
       console.log('✅ Сообщение добавляется в список');
       setMessages((prev) => [...prev, message]);
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
       
       // Звук только если сообщение не от меня
-      if (message.sender_id !== user.id && Platform.OS === 'web') {
+      if (message.sender_id !== userIdRef.current && Platform.OS === 'web') {
         try {
           // Пытаемся использовать кастомный звук
           const audio = new Audio('/assets/sounds/notification.mp3');
@@ -226,24 +235,24 @@ export default function ChatScreen() {
         }
       }
     }
-  }, [chatId, user.id]);
+  }, []);
 
   const handleMessageEdited = useCallback((data) => {
-    if (data.chatId === chatId) {
+    if (String(data.chatId) === String(chatIdRef.current)) {
       setMessages(prev => prev.map(msg =>
         msg.id === data.messageId ? { ...msg, content: data.content, edited: true } : msg
       ));
     }
-  }, [chatId]);
+  }, []);
 
   const handleMessageDeleted = useCallback((data) => {
-    if (data.chatId === chatId) {
+    if (String(data.chatId) === String(chatIdRef.current)) {
       setMessages(prev => prev.filter(msg => msg.id !== data.messageId));
     }
-  }, [chatId]);
+  }, []);
 
   const handleReactionAdded = useCallback((data) => {
-    if (data.chatId === chatId) {
+    if (String(data.chatId) === String(chatIdRef.current)) {
       setMessages(prev => prev.map(msg => {
         if (msg.id === data.messageId) {
           const reactions = msg.reactions || [];
@@ -274,10 +283,10 @@ export default function ChatScreen() {
         return msg;
       }));
     }
-  }, [chatId]);
+  }, []);
 
   const handleUserTyping = useCallback((data) => {
-    if (data.chatId === chatId && data.userId !== user.id) {
+    if (String(data.chatId) === String(chatIdRef.current) && data.userId !== userIdRef.current) {
       setTypingUsers((prev) => {
         if (!prev.includes(data.username)) {
           return [...prev, data.username];
@@ -285,13 +294,13 @@ export default function ChatScreen() {
         return prev;
       });
     }
-  }, [chatId, user.id]);
+  }, []);
 
   const handleUserStoppedTyping = useCallback((data) => {
-    if (data.chatId === chatId) {
+    if (String(data.chatId) === String(chatIdRef.current)) {
       setTypingUsers((prev) => prev.filter((name) => name !== data.username));
     }
-  }, [chatId]);
+  }, []);
 
   const sendMessage = () => {
     const text = inputText.trim();

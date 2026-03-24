@@ -346,9 +346,14 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#5B93FF',
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3
   },
   editAvatarText: {
     fontSize: 16
@@ -377,14 +382,17 @@ const styles = StyleSheet.create({
   },
   themeButton: {
     flex: 1,
-    padding: 10,
+    padding: 12,
     borderRadius: 8,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#F3F4F6',
     alignItems: 'center',
-    marginHorizontal: 4
+    marginHorizontal: 4,
+    borderWidth: 1.5,
+    borderColor: 'transparent'
   },
   themeButtonActive: {
-    backgroundColor: '#007AFF'
+    backgroundColor: '#EEF2FF',
+    borderColor: '#5B93FF'
   },
   themeButtonText: {
     fontSize: 13,
@@ -399,11 +407,16 @@ const styles = StyleSheet.create({
     padding: 15
   },
   button: {
-    padding: 15,
-    borderRadius: 10,
+    padding: 16,
+    borderRadius: 8,
     alignItems: 'center',
-    marginHorizontal: 5,
-    marginTop: 20
+    marginHorizontal: 16,
+    marginTop: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3
   },
   editButtonText: {
     color: '#fff',

@@ -8,44 +8,46 @@ const ThemeContext = createContext();
 export const lightTheme = {
   mode: 'light',
   colors: {
-    background: '#FFFFFF',
-    secondaryBackground: '#F5F5F5',
+    background: '#F8F9FA',
+    secondaryBackground: '#FFFFFF',
     card: '#FFFFFF',
-    text: '#000000',
-    secondaryText: '#666666',
-    border: '#E0E0E0',
-    primary: '#007AFF',
-    error: '#FF3B30',
-    success: '#4CD964',
-    messageBubble: '#007AFF',
-    ownMessageBubble: '#007AFF',
-    otherMessageBubble: '#FFFFFF',
+    text: '#1A1A1A',
+    secondaryText: '#6B7280',
+    border: '#E5E7EB',
+    primary: '#5B93FF',
+    error: '#EF4444',
+    success: '#10B981',
+    messageBubble: '#5B93FF',
+    ownMessageBubble: '#5B93FF',
+    otherMessageBubble: '#F3F4F6',
     ownMessageText: '#FFFFFF',
-    otherMessageText: '#000000',
-    inputBackground: '#F5F5F5',
-    online: '#4CD964'
+    otherMessageText: '#1A1A1A',
+    inputBackground: '#F3F4F6',
+    online: '#10B981',
+    shadow: 'rgba(0, 0, 0, 0.08)'
   }
 };
 
 export const darkTheme = {
   mode: 'dark',
   colors: {
-    background: '#000000',
+    background: '#0A0A0A',
     secondaryBackground: '#1C1C1E',
     card: '#1C1C1E',
     text: '#FFFFFF',
-    secondaryText: '#A0A0A0',
-    border: '#3A3A3C',
-    primary: '#0A84FF',
-    error: '#FF453A',
-    success: '#32D74B',
-    messageBubble: '#0A84FF',
-    ownMessageBubble: '#0A84FF',
-    otherMessageBubble: '#2C2C2E',
+    secondaryText: '#9CA3AF',
+    border: '#374151',
+    primary: '#60A5FA',
+    error: '#F87171',
+    success: '#34D399',
+    messageBubble: '#60A5FA',
+    ownMessageBubble: '#60A5FA',
+    otherMessageBubble: '#27272A',
     ownMessageText: '#FFFFFF',
     otherMessageText: '#FFFFFF',
-    inputBackground: '#2C2C2E',
-    online: '#32D74B'
+    inputBackground: '#27272A',
+    online: '#34D399',
+    shadow: 'rgba(0, 0, 0, 0.3)'
   }
 };
 

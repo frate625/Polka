@@ -359,7 +359,7 @@ const styles = StyleSheet.create({
   },
   replyLine: {
     width: 3,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#5B93FF',
     borderRadius: 2,
     marginRight: 8
   },
@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
   replyUsername: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#5B93FF',
     marginBottom: 2
   },
   replyText: {
@@ -377,20 +377,20 @@ const styles = StyleSheet.create({
     color: '#666'
   },
   bubble: {
-    padding: 10,
-    borderRadius: 15,
+    padding: 12,
+    borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 1,
-    elevation: 1
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2
   },
   otherBubble: {
-    backgroundColor: '#fff',
+    backgroundColor: '#F3F4F6',
     borderBottomLeftRadius: 4
   },
   ownBubble: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#5B93FF',
     borderBottomRightRadius: 4
   },
   videoNoteBubble: {
@@ -469,13 +469,15 @@ const styles = StyleSheet.create({
   },
   reactionBadge: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(0,0,0,0.05)',
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    backgroundColor: 'rgba(0,0,0,0.06)',
+    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     marginRight: 4,
     marginBottom: 4,
-    alignItems: 'center'
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.08)'
   },
   reactionEmoji: {
     fontSize: 14,

@@ -423,82 +423,98 @@ export default function AuthScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff'
+    backgroundColor: '#F8F9FA'
   },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: 20
+    padding: 24,
+    maxWidth: 440,
+    width: '100%',
+    alignSelf: 'center'
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40
+    marginBottom: 48
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#007AFF',
-    marginBottom: 8
+    fontSize: 36,
+    fontWeight: '700',
+    color: '#5B93FF',
+    marginBottom: 8,
+    letterSpacing: -0.5
   },
   subtitle: {
     fontSize: 16,
-    color: '#666'
-  },
-  apiStatus: {
-    fontSize: 13,
-    color: '#34C759',
-    marginTop: 12,
-    fontWeight: '500'
-  },
-  apiStatusError: {
-    color: '#FF3B30'
+    color: '#6B7280',
+    fontWeight: '400'
   },
   form: {
     width: '100%'
   },
   input: {
-    backgroundColor: '#f5f5f5',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 15,
-    fontSize: 16
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    color: '#1A1A1A',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1
   },
   button: {
-    backgroundColor: '#007AFF',
-    padding: 15,
-    borderRadius: 10,
+    backgroundColor: '#5B93FF',
+    padding: 16,
+    borderRadius: 8,
     alignItems: 'center',
-    marginTop: 10
+    marginTop: 8,
+    shadowColor: '#5B93FF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4
   },
   buttonDisabled: {
-    backgroundColor: '#ccc'
+    backgroundColor: '#D1D5DB',
+    shadowOpacity: 0
   },
   buttonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600'
+    fontWeight: '600',
+    letterSpacing: 0.5
   },
   switchButton: {
-    marginTop: 20,
-    alignItems: 'center'
+    marginTop: 24,
+    alignItems: 'center',
+    padding: 8
   },
   switchText: {
-    color: '#007AFF',
-    fontSize: 14
+    color: '#5B93FF',
+    fontSize: 15,
+    fontWeight: '500'
   },
   forgotButton: {
-    marginTop: 15,
-    alignItems: 'center'
+    marginTop: 16,
+    alignItems: 'center',
+    padding: 8
   },
   forgotText: {
-    color: '#007AFF',
-    fontSize: 14
+    color: '#6B7280',
+    fontSize: 14,
+    fontWeight: '500'
   },
   infoText: {
     fontSize: 14,
-    color: '#666',
-    marginTop: 10,
+    color: '#6B7280',
+    marginTop: 12,
     textAlign: 'center',
-    paddingHorizontal: 20
+    paddingHorizontal: 20,
+    lineHeight: 20
   }
 });

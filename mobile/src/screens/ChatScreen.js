@@ -178,8 +178,35 @@ export default function ChatScreen() {
     if (message.chat_id === chatId) {
       setMessages((prev) => [...prev, message]);
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+      
+      // Звук только если сообщение не от меня
+      if (message.sender_id !== user.id && Platform.OS === 'web') {
+        try {
+          // Можно заменить на свой звук: положите файл в assets/sounds/notification.mp3
+          // и используйте: const audio = new Audio(require('../../assets/sounds/notification.mp3'));
+          
+          // Простой notification звук (iOS style)
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          oscillator.frequency.value = 800;
+          oscillator.type = 'sine';
+          
+          gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+          
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + 0.1);
+        } catch (e) {
+          console.log('Sound play error:', e);
+        }
+      }
     }
-  }, [chatId]);
+  }, [chatId, user.id]);
 
   const handleMessageEdited = useCallback((data) => {
     if (data.chatId === chatId) {

@@ -33,8 +33,9 @@ const uploadFile = async (req, res) => {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    // URL для доступа к файлу
-    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    // Определяем протокол (для Railway всегда HTTPS)
+    const protocol = req.get('x-forwarded-proto') || req.protocol;
+    const fileUrl = `${protocol}://${req.get('host')}/uploads/${req.file.filename}`;
 
     res.json({
       message: 'File uploaded successfully',

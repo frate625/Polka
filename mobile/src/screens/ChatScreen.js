@@ -140,8 +140,15 @@ export default function ChatScreen() {
       socket.socket.emit('message_read', { chatId });
     }
     
-    // Регистрируем listeners только ОДИН раз при монтировании
-    console.log('👂 Setting up listeners (only once)');
+    return () => {
+      console.log('🔌 Leaving chat on cleanup');
+      socket.leaveChat(chatId);
+    };
+  }, [chatId]);
+  
+  // Регистрируем обработчики событий - ОДИН раз при монтировании компонента
+  useEffect(() => {
+    console.log('👂 Setting up global event handlers');
     
     const handleError = (error) => {
       console.error('❌ Socket error:', error);
@@ -157,8 +164,7 @@ export default function ChatScreen() {
     socket.on('error', handleError);
 
     return () => {
-      console.log('🔌 Cleaning up listeners and leaving chat');
-      socket.leaveChat(chatId);
+      console.log('🔌 Removing global event handlers');
       socket.off('new_message', handleNewMessage);
       socket.off('message_edited', handleMessageEdited);
       socket.off('message_deleted', handleMessageDeleted);

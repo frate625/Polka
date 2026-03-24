@@ -33,6 +33,7 @@ class SocketService {
   constructor() {
     this.socket = null;
     this.listeners = new Map();
+    this.globalHandlers = new Map(); // Глобальные обработчики, которые не удаляются
   }
 
   async connect() {
@@ -61,6 +62,24 @@ class SocketService {
 
     this.socket.on('error', (error) => {
       console.error('Socket error:', error);
+    });
+    
+    // Регистрируем глобальные обработчики сразу при подключении
+    this.registerGlobalHandlers();
+  }
+  
+  registerGlobalHandlers() {
+    // Эти обработчики работают всегда и вызывают зарегистрированные колбэки
+    const events = ['new_message', 'message_edited', 'message_deleted', 'reaction_added', 
+                    'user_typing', 'user_stopped_typing', 'message_delivered', 'message_read'];
+    
+    events.forEach(event => {
+      this.socket.on(event, (data) => {
+        console.log(`🌐 Global handler received: ${event}`, data);
+        // Вызываем все зарегистрированные обработчики для этого события
+        const handlers = this.globalHandlers.get(event) || [];
+        handlers.forEach(handler => handler(data));
+      });
     });
   }
 
@@ -140,37 +159,35 @@ class SocketService {
   }
 
   on(event, callback) {
-    if (this.socket) {
-      console.log('👂 Registering listener for event:', event);
-      this.socket.on(event, callback);
-      
-      if (!this.listeners.has(event)) {
-        this.listeners.set(event, []);
-      }
-      this.listeners.get(event).push(callback);
-    } else {
-      console.error('❌ Socket not connected, cannot register listener for:', event);
+    console.log('👂 Registering global handler for event:', event);
+    
+    if (!this.globalHandlers.has(event)) {
+      this.globalHandlers.set(event, []);
+    }
+    
+    // Добавляем в список глобальных обработчиков
+    const handlers = this.globalHandlers.get(event);
+    if (!handlers.includes(callback)) {
+      handlers.push(callback);
+      console.log(`✅ Handler registered. Total handlers for ${event}:`, handlers.length);
     }
   }
 
   off(event, callback) {
-    if (this.socket) {
-      this.socket.off(event, callback);
-      
-      if (this.listeners.has(event)) {
-        const callbacks = this.listeners.get(event);
-        const index = callbacks.indexOf(callback);
-        if (index > -1) {
-          callbacks.splice(index, 1);
-        }
+    if (this.globalHandlers.has(event)) {
+      const handlers = this.globalHandlers.get(event);
+      const index = handlers.indexOf(callback);
+      if (index > -1) {
+        handlers.splice(index, 1);
+        console.log(`🗑️ Handler removed for ${event}. Remaining:`, handlers.length);
       }
     }
   }
 
   removeAllListeners(event) {
-    if (this.socket) {
-      this.socket.removeAllListeners(event);
-      this.listeners.delete(event);
+    if (this.globalHandlers.has(event)) {
+      this.globalHandlers.set(event, []);
+      console.log(`🗑️ All handlers removed for event: ${event}`);
     }
   }
 }

@@ -40,7 +40,7 @@ const User = sequelize.define('User', {
   status: {
     type: DataTypes.STRING,
     allowNull: true,
-    defaultValue: 'Hey there! I am using Chat App'
+    defaultValue: 'Hey there! I am using Polka'
   },
   is_online: {
     type: DataTypes.BOOLEAN,

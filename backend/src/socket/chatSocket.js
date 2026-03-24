@@ -113,39 +113,47 @@ module.exports = (io) => {
           status: 'sent'
         });
 
-        await Chat.update(
-          { last_message_at: new Date() },
-          { where: { id: chatId } }
-        );
+        // Параллельные запросы для ускорения
+        await Promise.all([
+          Chat.update(
+            { last_message_at: new Date() },
+            { where: { id: chatId } }
+          ),
+          ChatMember.increment('unread_count', {
+            where: {
+              chat_id: chatId,
+              user_id: { [require('sequelize').Op.ne]: socket.userId }
+            }
+          })
+        ]);
 
-        await ChatMember.increment('unread_count', {
-          where: {
-            chat_id: chatId,
-            user_id: { [require('sequelize').Op.ne]: socket.userId }
+        // Отправляем сообщение сразу с базовыми данными
+        const quickMessage = {
+          ...message.toJSON(),
+          sender: {
+            id: socket.user.id,
+            username: socket.user.username,
+            avatar_url: socket.user.avatar_url
           }
-        });
+        };
 
-        const fullMessage = await Message.findByPk(message.id, {
-          include: [
-            {
+        // Если есть reply_to, подгружаем его асинхронно
+        if (reply_to) {
+          Message.findByPk(reply_to, {
+            attributes: ['id', 'content', 'type', 'file_url'],
+            include: [{
               model: User,
               as: 'sender',
-              attributes: ['id', 'username', 'avatar_url']
-            },
-            {
-              model: Message,
-              as: 'reply_to',
-              attributes: ['id', 'content', 'type', 'file_url'],
-              include: [{
-                model: User,
-                as: 'sender',
-                attributes: ['id', 'username']
-              }]
-            }
-          ]
-        });
-
-        io.to(`chat_${chatId}`).emit('new_message', fullMessage);
+              attributes: ['id', 'username']
+            }]
+          }).then(replyMsg => {
+            quickMessage.reply_to = replyMsg;
+            io.to(`chat_${chatId}`).emit('new_message', quickMessage);
+          });
+        } else {
+          // Отправляем сразу без ожидания
+          io.to(`chat_${chatId}`).emit('new_message', quickMessage);
+        }
 
         socket.to(`chat_${chatId}`).emit('message_delivered', {
           messageId: message.id,

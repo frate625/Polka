@@ -132,6 +132,12 @@ export default function ChatScreen() {
     loadMessages();
     
     socket.joinChat(chatId);
+    
+    // Сбрасываем счетчик непрочитанных сообщений при заходе в чат
+    if (socket.socket) {
+      socket.socket.emit('message_read', { chatId });
+    }
+    
     socket.on('new_message', handleNewMessage);
     socket.on('message_edited', handleMessageEdited);
     socket.on('message_deleted', handleMessageDeleted);

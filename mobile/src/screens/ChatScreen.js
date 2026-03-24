@@ -130,6 +130,7 @@ export default function ChatScreen() {
   // Загрузка сообщений при открытии чата
   useEffect(() => {
     console.log('📱 ChatScreen mounted for chatId:', chatId);
+    isMountedRef.current = true;
     loadMessages();
     
     console.log('🔌 Joining chat:', chatId);
@@ -143,37 +144,37 @@ export default function ChatScreen() {
     return () => {
       console.log('🔌 Leaving chat on cleanup');
       socket.leaveChat(chatId);
+      isMountedRef.current = false;
     };
   }, [chatId]);
   
-  // Регистрируем обработчики событий - ОДИН раз при монтировании компонента
+  // Регистрируем обработчики напрямую в socket.io ОДИН раз
   useEffect(() => {
-    console.log('👂 Setting up global event handlers');
+    if (!socket.socket || listenersRegisteredRef.current) {
+      console.log('⚠️ Skip listener registration:', { socketReady: !!socket.socket, alreadyRegistered: listenersRegisteredRef.current });
+      return;
+    }
+    
+    console.log('👂 Registering PERMANENT socket.io listeners');
+    listenersRegisteredRef.current = true;
     
     const handleError = (error) => {
+      if (!isMountedRef.current) return;
       console.error('❌ Socket error:', error);
       Alert.alert('Ошибка', error.message || 'Произошла ошибка');
     };
     
-    socket.on('new_message', handleNewMessage);
-    socket.on('message_edited', handleMessageEdited);
-    socket.on('message_deleted', handleMessageDeleted);
-    socket.on('reaction_added', handleReactionAdded);
-    socket.on('user_typing', handleUserTyping);
-    socket.on('user_stopped_typing', handleUserStoppedTyping);
-    socket.on('error', handleError);
-
-    return () => {
-      console.log('🔌 Removing global event handlers');
-      socket.off('new_message', handleNewMessage);
-      socket.off('message_edited', handleMessageEdited);
-      socket.off('message_deleted', handleMessageDeleted);
-      socket.off('reaction_added', handleReactionAdded);
-      socket.off('user_typing', handleUserTyping);
-      socket.off('user_stopped_typing', handleUserStoppedTyping);
-      socket.off('error', handleError);
-    };
-  }, []);
+    // Регистрируем напрямую в socket.io и НИКОГДА НЕ УДАЛЯЕМ
+    socket.socket.on('new_message', handleNewMessage);
+    socket.socket.on('message_edited', handleMessageEdited);
+    socket.socket.on('message_deleted', handleMessageDeleted);
+    socket.socket.on('reaction_added', handleReactionAdded);
+    socket.socket.on('user_typing', handleUserTyping);
+    socket.socket.on('user_stopped_typing', handleUserStoppedTyping);
+    socket.socket.on('error', handleError);
+    
+    console.log('✅ PERMANENT listeners registered - will NEVER be removed');
+  }, [socket.socket]);
 
   const loadMessages = async () => {
     try {
@@ -191,6 +192,8 @@ export default function ChatScreen() {
   // Используем useRef для хранения текущего chatId, чтобы избежать пересоздания колбэков
   const chatIdRef = useRef(chatId);
   const userIdRef = useRef(user.id);
+  const isMountedRef = useRef(true);
+  const listenersRegisteredRef = useRef(false);
   
   useEffect(() => {
     chatIdRef.current = chatId;

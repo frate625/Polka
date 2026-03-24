@@ -59,6 +59,7 @@ module.exports = (io) => {
 
     socket.on('join_chat', async (chatId) => {
       try {
+        console.log(`📥 User ${socket.userId} requesting to join chat ${chatId}`);
         const isMember = await ChatMember.findOne({
           where: { chat_id: chatId, user_id: socket.userId }
         });
@@ -66,7 +67,12 @@ module.exports = (io) => {
         if (isMember) {
           socket.join(`chat_${chatId}`);
           socket.currentChat = chatId;
-          console.log(`User ${socket.userId} joined chat ${chatId}`);
+          console.log(`✅ User ${socket.userId} (${socket.user.username}) joined room: chat_${chatId}`);
+          
+          // Сбрасываем непрочитанные для этого юзера
+          socket.emit('message_read', { chatId });
+        } else {
+          console.log(`❌ User ${socket.userId} is not a member of chat ${chatId}`);
         }
       } catch (error) {
         console.error('Join chat error:', error);
@@ -148,11 +154,20 @@ module.exports = (io) => {
             }]
           }).then(replyMsg => {
             quickMessage.reply_to = replyMsg;
+            console.log(`📤 Emitting new_message to room chat_${chatId}:`, { messageId: quickMessage.id, sender: socket.user.username });
             io.to(`chat_${chatId}`).emit('new_message', quickMessage);
           });
         } else {
           // Отправляем сразу без ожидания
-          io.to(`chat_${chatId}`).emit('new_message', quickMessage);
+          const roomName = `chat_${chatId}`;
+          const socketsInRoom = io.sockets.adapter.rooms.get(roomName);
+          console.log(`📤 Emitting new_message to room ${roomName}:`, { 
+            messageId: quickMessage.id, 
+            sender: socket.user.username, 
+            chatId: quickMessage.chat_id,
+            socketsInRoom: socketsInRoom ? Array.from(socketsInRoom) : []
+          });
+          io.to(roomName).emit('new_message', quickMessage);
         }
 
         socket.to(`chat_${chatId}`).emit('message_delivered', {

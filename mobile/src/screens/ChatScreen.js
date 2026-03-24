@@ -129,8 +129,10 @@ export default function ChatScreen() {
 
   // Загрузка сообщений при открытии чата
   useEffect(() => {
+    console.log('📱 ChatScreen mounted for chatId:', chatId);
     loadMessages();
     
+    console.log('🔌 Joining chat:', chatId);
     socket.joinChat(chatId);
     
     // Сбрасываем счетчик непрочитанных сообщений при заходе в чат
@@ -138,6 +140,7 @@ export default function ChatScreen() {
       socket.socket.emit('message_read', { chatId });
     }
     
+    console.log('👂 Setting up new_message listener for chatId:', chatId);
     socket.on('new_message', handleNewMessage);
     socket.on('message_edited', handleMessageEdited);
     socket.on('message_deleted', handleMessageDeleted);
@@ -175,7 +178,20 @@ export default function ChatScreen() {
   };
 
   const handleNewMessage = useCallback((message) => {
-    if (message.chat_id === chatId) {
+    console.log('🔔 Получено событие new_message:', {
+      messageChatId: message.chat_id,
+      messageChatIdType: typeof message.chat_id,
+      currentChatId: chatId,
+      currentChatIdType: typeof chatId,
+      matches: String(message.chat_id) === String(chatId),
+      messageId: message.id,
+      senderId: message.sender_id,
+      content: message.content?.substring(0, 30)
+    });
+    
+    // Приводим к строке для сравнения
+    if (String(message.chat_id) === String(chatId)) {
+      console.log('✅ Сообщение добавляется в список');
       setMessages((prev) => [...prev, message]);
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
       

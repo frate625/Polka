@@ -73,7 +73,10 @@ class SocketService {
 
   joinChat(chatId) {
     if (this.socket) {
+      console.log('📤 Sending join_chat event for chatId:', chatId);
       this.socket.emit('join_chat', chatId);
+    } else {
+      console.error('❌ Socket not connected, cannot join chat');
     }
   }
 
@@ -85,12 +88,15 @@ class SocketService {
 
   sendMessage(chatId, content, type = 'text', fileData = null) {
     if (this.socket) {
+      console.log('📤 Sending message:', { chatId, type, content: content?.substring(0, 30) });
       this.socket.emit('send_message', {
         chatId,
         content,
         type,
         ...fileData
       });
+    } else {
+      console.error('❌ Socket not connected, cannot send message');
     }
   }
 
@@ -135,12 +141,15 @@ class SocketService {
 
   on(event, callback) {
     if (this.socket) {
+      console.log('👂 Registering listener for event:', event);
       this.socket.on(event, callback);
       
       if (!this.listeners.has(event)) {
         this.listeners.set(event, []);
       }
       this.listeners.get(event).push(callback);
+    } else {
+      console.error('❌ Socket not connected, cannot register listener for:', event);
     }
   }
 

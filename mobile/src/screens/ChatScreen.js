@@ -23,6 +23,7 @@ import MessageDateSeparator from '../components/MessageDateSeparator';
 import MediaPicker from '../components/MediaPicker';
 import RecordButton from '../components/RecordButton';
 import CallScreen from '../components/CallScreen';
+import ChatBackground from '../components/ChatBackground';
 import useWebRTC from '../hooks/useWebRTC';
 
 export default function ChatScreen() {
@@ -557,6 +558,7 @@ export default function ChatScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
+      <ChatBackground />
       <FlatList
         ref={flatListRef}
         data={messagesWithSeparators}

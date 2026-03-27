@@ -237,12 +237,20 @@ export default function MediaPicker({ onMediaSelected }) {
         >
           <View style={styles.menuContainer}>
             <TouchableOpacity style={styles.menuItem} onPress={pickImage}>
-              <Text style={styles.menuIcon}>🖼️</Text>
+              <Image 
+                source={require('../../assets/icons/image.png')} 
+                style={styles.menuIconImage}
+                resizeMode="contain"
+              />
               <Text style={styles.menuText}>Фото</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.menuItem} onPress={pickDocument}>
-              <Text style={styles.menuIcon}>📄</Text>
+              <Image 
+                source={require('../../assets/icons/file.png')} 
+                style={styles.menuIconImage}
+                resizeMode="contain"
+              />
               <Text style={styles.menuText}>Файл</Text>
             </TouchableOpacity>
 
@@ -298,6 +306,11 @@ const styles = StyleSheet.create({
   },
   menuIcon: {
     fontSize: 28,
+    marginRight: 16
+  },
+  menuIconImage: {
+    width: 28,
+    height: 28,
     marginRight: 16
   },
   menuText: {

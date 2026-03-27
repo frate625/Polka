@@ -463,37 +463,69 @@ export default function ChatInfoScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {/* Секция аватара для группы */}
-      {chatInfo?.type === 'group' && (
-        <View style={[styles.avatarSection, { backgroundColor: theme.colors.card, borderBottomColor: theme.colors.border }]}>
-          <View style={styles.avatarContainer}>
-            {chatInfo.avatar_url ? (
-              <Image source={{ uri: chatInfo.avatar_url }} style={styles.groupAvatar} />
-            ) : (
-              <View style={[styles.groupAvatarPlaceholder, { backgroundColor: theme.colors.primary }]}>
-                <Text style={styles.groupAvatarText}>{chatName?.[0]?.toUpperCase() || 'G'}</Text>
-              </View>
-            )}
-          </View>
-          <Text style={[styles.groupName, { color: theme.colors.text }]}>{chatName}</Text>
-          {chatInfo.owner_id === user?.id && (
-            <TouchableOpacity 
-              style={[styles.changeAvatarButton, { backgroundColor: theme.colors.primary }]}
-              onPress={handleUploadAvatar}
-              disabled={uploading}
-            >
-              {uploading ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Text style={styles.changeAvatarText}>Изменить фото</Text>
-              )}
-            </TouchableOpacity>
+    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {/* Верхняя секция с аватаром и именем */}
+      <View style={[styles.headerSection, { backgroundColor: theme.colors.card }]}>
+        <View style={styles.avatarContainer}>
+          {chatInfo?.avatar_url ? (
+            <Image source={{ uri: chatInfo.avatar_url }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.primary }]}>
+              <Text style={styles.avatarText}>{chatName?.[0]?.toUpperCase() || 'C'}</Text>
+            </View>
           )}
         </View>
-      )}
+        <Text style={[styles.chatName, { color: theme.colors.text }]}>{chatName}</Text>
+        {chatInfo?.type === 'group' && chatInfo.owner_id === user?.id && (
+          <TouchableOpacity 
+            style={[styles.changePhotoButton, { borderColor: theme.colors.border }]}
+            onPress={handleUploadAvatar}
+            disabled={uploading}
+          >
+            {uploading ? (
+              <ActivityIndicator color={theme.colors.primary} size="small" />
+            ) : (
+              <Text style={[styles.changePhotoText, { color: theme.colors.primary }]}>Изменить фото</Text>
+            )}
+          </TouchableOpacity>
+        )}
+      </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsContainer}>
+      {/* Секции с категориями */}
+      <View style={[styles.section, { backgroundColor: theme.colors.card, marginTop: 12 }]}>
+        <TouchableOpacity style={[styles.sectionItem, { borderBottomColor: theme.colors.border }]} onPress={() => setActiveTab('media')}>
+          <Text style={styles.sectionIcon}>🖼️</Text>
+          <Text style={[styles.sectionText, { color: theme.colors.text }]}>Фотографии</Text>
+          <Text style={[styles.sectionArrow, { color: theme.colors.secondaryText }]}>›</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.sectionItem, { borderBottomColor: theme.colors.border }]} onPress={() => setActiveTab('video_notes')}>
+          <Text style={styles.sectionIcon}>⭕</Text>
+          <Text style={[styles.sectionText, { color: theme.colors.text }]}>Видео</Text>
+          <Text style={[styles.sectionArrow, { color: theme.colors.secondaryText }]}>›</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.sectionItem, { borderBottomWidth: 0 }]} onPress={() => setActiveTab('voice')}>
+          <Text style={styles.sectionIcon}>🎤</Text>
+          <Text style={[styles.sectionText, { color: theme.colors.text }]}>Аудиозаписи</Text>
+          <Text style={[styles.sectionArrow, { color: theme.colors.secondaryText }]}>›</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={[styles.section, { backgroundColor: theme.colors.card, marginTop: 12 }]}>
+        <TouchableOpacity style={[styles.sectionItem, { borderBottomColor: theme.colors.border }]} onPress={() => setActiveTab('files')}>
+          <Text style={styles.sectionIcon}>📄</Text>
+          <Text style={[styles.sectionText, { color: theme.colors.text }]}>Файлы</Text>
+          <Text style={[styles.sectionArrow, { color: theme.colors.secondaryText }]}>›</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.sectionItem, { borderBottomWidth: 0 }]} onPress={() => setActiveTab('links')}>
+          <Text style={styles.sectionIcon}>🔗</Text>
+          <Text style={[styles.sectionText, { color: theme.colors.text }]}>Ссылки</Text>
+          <Text style={[styles.sectionArrow, { color: theme.colors.secondaryText }]}>›</Text>
+        </TouchableOpacity>
+      </View>
+
+      {activeTab !== 'media' && (
+        <View style={{ marginTop: 12 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsContainer}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'search' && { borderBottomColor: theme.colors.primary }]}
           onPress={() => setActiveTab('search')}
@@ -549,39 +581,37 @@ export default function ChatInfoScreen() {
         </TouchableOpacity>
       </ScrollView>
 
-      {renderContent()}
-      
+          {renderContent()}
+        </View>
+      )}
+
       {/* Кнопки управления чатом */}
-      <View style={[styles.actionsContainer, { backgroundColor: theme.colors.background, borderTopColor: theme.colors.border }]}>
+      <View style={[styles.actionsContainer, { backgroundColor: theme.colors.card, marginTop: 12 }]}>
         {chatInfo?.type === 'group' ? (
-          // Кнопки для группового чата
-          <>
-            <TouchableOpacity 
-              style={[styles.actionButton, { backgroundColor: '#FF3B30' }]}
-              onPress={handleLeaveGroup}
-            >
-              <Text style={styles.actionButtonText}>Покинуть группу</Text>
-            </TouchableOpacity>
-          </>
+          <TouchableOpacity 
+            style={[styles.actionItem, { borderBottomWidth: 0 }]}
+            onPress={handleLeaveGroup}
+          >
+            <Text style={[styles.actionText, { color: '#FF3B30' }]}>Покинуть группу</Text>
+          </TouchableOpacity>
         ) : (
-          // Кнопки для приватного чата
           <>
             <TouchableOpacity 
-              style={[styles.actionButton, { backgroundColor: '#FF9500' }]}
+              style={[styles.actionItem, { borderBottomColor: theme.colors.border }]}
               onPress={handleHideChat}
             >
-              <Text style={styles.actionButtonText}>Удалить у себя</Text>
+              <Text style={[styles.actionText, { color: '#FF9500' }]}>Удалить у себя</Text>
             </TouchableOpacity>
             <TouchableOpacity 
-              style={[styles.actionButton, { backgroundColor: '#FF3B30' }]}
+              style={[styles.actionItem, { borderBottomWidth: 0 }]}
               onPress={handleDeleteForEveryone}
             >
-              <Text style={styles.actionButtonText}>Удалить для всех</Text>
+              <Text style={[styles.actionText, { color: '#FF3B30' }]}>Удалить для всех</Text>
             </TouchableOpacity>
           </>
         )}
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -589,45 +619,69 @@ const styles = StyleSheet.create({
   container: {
     flex: 1
   },
-  avatarSection: {
+  headerSection: {
     padding: 20,
-    alignItems: 'center',
-    borderBottomWidth: 1
+    alignItems: 'center'
   },
   avatarContainer: {
-    marginBottom: 12
+    marginBottom: 16
   },
-  groupAvatar: {
+  avatar: {
     width: 100,
     height: 100,
     borderRadius: 50
   },
-  groupAvatarPlaceholder: {
+  avatarPlaceholder: {
     width: 100,
     height: 100,
     borderRadius: 50,
     justifyContent: 'center',
     alignItems: 'center'
   },
-  groupAvatarText: {
+  avatarText: {
     color: '#fff',
     fontSize: 40,
     fontWeight: '600'
   },
-  groupName: {
-    fontSize: 20,
+  chatName: {
+    fontSize: 22,
     fontWeight: '600',
-    marginBottom: 12
+    marginBottom: 8
   },
-  changeAvatarButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8
+  changePhotoButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 8
   },
-  changeAvatarText: {
-    color: '#fff',
+  changePhotoText: {
     fontSize: 14,
     fontWeight: '600'
+  },
+  section: {
+    borderRadius: 12,
+    marginHorizontal: 8,
+    overflow: 'hidden'
+  },
+  sectionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1
+  },
+  sectionIcon: {
+    fontSize: 24,
+    marginRight: 16,
+    width: 28
+  },
+  sectionText: {
+    flex: 1,
+    fontSize: 16
+  },
+  sectionArrow: {
+    fontSize: 24,
+    fontWeight: '300'
   },
   tabsContainer: {
     borderBottomWidth: 1,
@@ -799,18 +853,17 @@ const styles = StyleSheet.create({
   },
   // Actions
   actionsContainer: {
-    padding: 16,
-    borderTopWidth: 1,
-    gap: 12
-  },
-  actionButton: {
-    padding: 16,
     borderRadius: 12,
-    alignItems: 'center',
-    marginBottom: 8
+    marginHorizontal: 8,
+    marginBottom: 20,
+    overflow: 'hidden'
   },
-  actionButtonText: {
-    color: '#fff',
+  actionItem: {
+    padding: 16,
+    alignItems: 'center',
+    borderBottomWidth: 1
+  },
+  actionText: {
     fontSize: 16,
     fontWeight: '600'
   }

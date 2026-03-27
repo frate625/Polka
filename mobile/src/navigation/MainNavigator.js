@@ -23,13 +23,16 @@ const Stack = createStackNavigator();
 function ChatsStack() {
   const { theme } = useTheme();
   const isDark = theme.mode === 'dark';
-  const headerBg = isDark ? theme.colors.secondaryBackground : theme.colors.secondaryBackground;
+  const headerBg = isDark ? '#0f0f0f' : theme.colors.secondaryBackground;
   
   return (
     <Stack.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: headerBg
+          backgroundColor: headerBg,
+          borderBottomWidth: 0,
+          shadowOpacity: 0,
+          elevation: 0
         },
         headerTintColor: theme.colors.text
       }}
@@ -87,13 +90,16 @@ function ChatsStack() {
 function ProfileStack() {
   const { theme } = useTheme();
   const isDark = theme.mode === 'dark';
-  const headerBg = isDark ? theme.colors.secondaryBackground : theme.colors.secondaryBackground;
+  const headerBg = isDark ? '#0f0f0f' : theme.colors.secondaryBackground;
   
   return (
     <Stack.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: headerBg
+          backgroundColor: headerBg,
+          borderBottomWidth: 0,
+          shadowOpacity: 0,
+          elevation: 0
         },
         headerTintColor: theme.colors.text
       }}
@@ -111,7 +117,7 @@ function ProfileStack() {
 export default function MainNavigator() {
   const { theme } = useTheme();
   const isDark = theme.mode === 'dark';
-  const tabBarBg = theme.colors.secondaryBackground;
+  const tabBarBg = isDark ? '#0f0f0f' : theme.colors.secondaryBackground;
   
   return (
     <Tab.Navigator 
@@ -119,7 +125,10 @@ export default function MainNavigator() {
         headerShown: false,
         tabBarStyle: {
           backgroundColor: tabBarBg,
-          borderTopColor: isDark ? 'rgba(255,255,255,0.1)' : theme.colors.border
+          borderTopWidth: 0,
+          borderTopColor: 'transparent',
+          elevation: 0,
+          shadowOpacity: 0
         },
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.secondaryText

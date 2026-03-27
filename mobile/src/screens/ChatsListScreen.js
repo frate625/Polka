@@ -219,8 +219,7 @@ export default function ChatsListScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#fff'
+    flex: 1
   },
   savedMessagesButton: {
     flexDirection: 'row',

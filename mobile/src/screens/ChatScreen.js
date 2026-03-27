@@ -119,7 +119,10 @@ export default function ChatScreen() {
     const isDark = theme.mode === 'dark';
     navigation.setOptions({
       headerStyle: {
-        backgroundColor: theme.colors.secondaryBackground
+        backgroundColor: isDark ? '#0f0f0f' : theme.colors.secondaryBackground,
+        borderBottomWidth: 0,
+        shadowOpacity: 0,
+        elevation: 0
       },
       headerTintColor: theme.colors.text,
       headerTitle: () => (

@@ -10,27 +10,44 @@ import {
   TextInput,
   ScrollView,
   Linking,
-  Platform
+  Platform,
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { messageAPI } from '../services/api';
+import { messageAPI, chatAPI, uploadAPI } from '../services/api';
 import { useTheme } from '../store/ThemeContext';
+import { useAuth } from '../store/AuthContext';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function ChatInfoScreen() {
   const route = useRoute();
   const navigation = useNavigation();
   const { chatId, chatName } = route.params;
   const { theme } = useTheme();
+  const { user } = useAuth();
   
   const [activeTab, setActiveTab] = useState('media'); // media, files, voice, links
   const [searchQuery, setSearchQuery] = useState('');
   const [messages, setMessages] = useState([]);
   const [filteredMessages, setFilteredMessages] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [chatInfo, setChatInfo] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     loadAllMessages();
+    loadChatInfo();
   }, [chatId]);
+
+  const loadChatInfo = async () => {
+    try {
+      const response = await chatAPI.getChatById(chatId);
+      setChatInfo(response.data);
+    } catch (error) {
+      console.error('Ошибка загрузки информации о чате:', error);
+    }
+  };
 
   useEffect(() => {
     filterMessages();
@@ -110,6 +127,138 @@ export default function ChatInfoScreen() {
   const extractLinks = (text) => {
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     return text.match(urlRegex) || [];
+  };
+
+  // Удаление чата у себя
+  const handleHideChat = async () => {
+    if (Platform.OS === 'web') {
+      if (!window.confirm('Удалить чат у себя? Чат останется у собеседника.')) return;
+    } else {
+      Alert.alert(
+        'Удалить чат у себя?',
+        'Чат останется у собеседника',
+        [
+          { text: 'Отмена', style: 'cancel' },
+          { text: 'Удалить', style: 'destructive', onPress: () => performHideChat() }
+        ]
+      );
+      return;
+    }
+    await performHideChat();
+  };
+
+  const performHideChat = async () => {
+    try {
+      await chatAPI.deleteChat(chatId, false);
+      navigation.navigate('ChatsList');
+    } catch (error) {
+      console.error('Ошибка удаления чата:', error);
+      Alert.alert('Ошибка', 'Не удалось удалить чат');
+    }
+  };
+
+  // Удаление чата для всех
+  const handleDeleteForEveryone = async () => {
+    if (Platform.OS === 'web') {
+      if (!window.confirm('Удалить чат для обоих? Это действие нельзя отменить!')) return;
+    } else {
+      Alert.alert(
+        'Удалить чат для всех?',
+        'Чат удалится у обоих пользователей. Это действие нельзя отменить!',
+        [
+          { text: 'Отмена', style: 'cancel' },
+          { text: 'Удалить', style: 'destructive', onPress: () => performDeleteForEveryone() }
+        ]
+      );
+      return;
+    }
+    await performDeleteForEveryone();
+  };
+
+  const performDeleteForEveryone = async () => {
+    try {
+      await chatAPI.deleteChat(chatId, true);
+      navigation.navigate('ChatsList');
+    } catch (error) {
+      console.error('Ошибка удаления чата:', error);
+      Alert.alert('Ошибка', error.response?.data?.error || 'Не удалось удалить чат');
+    }
+  };
+
+  // Выход из группы
+  const handleLeaveGroup = async () => {
+    if (Platform.OS === 'web') {
+      if (!window.confirm('Покинуть группу?')) return;
+    } else {
+      Alert.alert(
+        'Покинуть группу?',
+        'Вы выйдете из этой группы',
+        [
+          { text: 'Отмена', style: 'cancel' },
+          { text: 'Выйти', style: 'destructive', onPress: () => performLeaveGroup() }
+        ]
+      );
+      return;
+    }
+    await performLeaveGroup();
+  };
+
+  const performLeaveGroup = async () => {
+    try {
+      await chatAPI.leaveGroup(chatId);
+      navigation.navigate('ChatsList');
+    } catch (error) {
+      console.error('Ошибка выхода из группы:', error);
+      Alert.alert('Ошибка', 'Не удалось выйти из группы');
+    }
+  };
+
+  // Загрузка аватара группы
+  const handleUploadAvatar = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (status !== 'granted') {
+        Alert.alert('Ошибка', 'Необходимо разрешение на доступ к фото');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setUploading(true);
+        
+        let uploadResponse;
+        if (Platform.OS === 'web') {
+          const response = await fetch(result.assets[0].uri);
+          const blob = await response.blob();
+          const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
+          uploadResponse = await uploadAPI.uploadWebFile(file);
+        } else {
+          uploadResponse = await uploadAPI.uploadFile({
+            uri: result.assets[0].uri,
+            type: 'image/jpeg',
+            fileName: 'avatar.jpg'
+          });
+        }
+
+        const avatarUrl = uploadResponse.data.fileUrl;
+        await chatAPI.updateChat(chatId, { avatar_url: avatarUrl });
+        
+        setChatInfo(prev => ({ ...prev, avatar_url: avatarUrl }));
+        Alert.alert('Успех', 'Аватар группы обновлен');
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки аватара:', error);
+      Alert.alert('Ошибка', 'Не удалось загрузить аватар');
+    } finally {
+      setUploading(false);
+    }
   };
 
   // Рендер медиа (фото/видео)
@@ -315,6 +464,35 @@ export default function ChatInfoScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {/* Секция аватара для группы */}
+      {chatInfo?.type === 'group' && (
+        <View style={[styles.avatarSection, { backgroundColor: theme.colors.card, borderBottomColor: theme.colors.border }]}>
+          <View style={styles.avatarContainer}>
+            {chatInfo.avatar_url ? (
+              <Image source={{ uri: chatInfo.avatar_url }} style={styles.groupAvatar} />
+            ) : (
+              <View style={[styles.groupAvatarPlaceholder, { backgroundColor: theme.colors.primary }]}>
+                <Text style={styles.groupAvatarText}>{chatName?.[0]?.toUpperCase() || 'G'}</Text>
+              </View>
+            )}
+          </View>
+          <Text style={[styles.groupName, { color: theme.colors.text }]}>{chatName}</Text>
+          {chatInfo.owner_id === user?.id && (
+            <TouchableOpacity 
+              style={[styles.changeAvatarButton, { backgroundColor: theme.colors.primary }]}
+              onPress={handleUploadAvatar}
+              disabled={uploading}
+            >
+              {uploading ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.changeAvatarText}>Изменить фото</Text>
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsContainer}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'search' && { borderBottomColor: theme.colors.primary }]}
@@ -372,6 +550,37 @@ export default function ChatInfoScreen() {
       </ScrollView>
 
       {renderContent()}
+      
+      {/* Кнопки управления чатом */}
+      <View style={[styles.actionsContainer, { backgroundColor: theme.colors.background, borderTopColor: theme.colors.border }]}>
+        {chatInfo?.type === 'group' ? (
+          // Кнопки для группового чата
+          <>
+            <TouchableOpacity 
+              style={[styles.actionButton, { backgroundColor: '#FF3B30' }]}
+              onPress={handleLeaveGroup}
+            >
+              <Text style={styles.actionButtonText}>Покинуть группу</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          // Кнопки для приватного чата
+          <>
+            <TouchableOpacity 
+              style={[styles.actionButton, { backgroundColor: '#FF9500' }]}
+              onPress={handleHideChat}
+            >
+              <Text style={styles.actionButtonText}>Удалить у себя</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.actionButton, { backgroundColor: '#FF3B30' }]}
+              onPress={handleDeleteForEveryone}
+            >
+              <Text style={styles.actionButtonText}>Удалить для всех</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
     </View>
   );
 }
@@ -379,6 +588,46 @@ export default function ChatInfoScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1
+  },
+  avatarSection: {
+    padding: 20,
+    alignItems: 'center',
+    borderBottomWidth: 1
+  },
+  avatarContainer: {
+    marginBottom: 12
+  },
+  groupAvatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50
+  },
+  groupAvatarPlaceholder: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  groupAvatarText: {
+    color: '#fff',
+    fontSize: 40,
+    fontWeight: '600'
+  },
+  groupName: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 12
+  },
+  changeAvatarButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8
+  },
+  changeAvatarText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600'
   },
   tabsContainer: {
     borderBottomWidth: 1,
@@ -547,5 +796,22 @@ const styles = StyleSheet.create({
   searchContent: {
     fontSize: 14,
     lineHeight: 20
+  },
+  // Actions
+  actionsContainer: {
+    padding: 16,
+    borderTopWidth: 1,
+    gap: 12
+  },
+  actionButton: {
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 8
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600'
   }
 });

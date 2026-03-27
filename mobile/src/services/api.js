@@ -107,7 +107,8 @@ export const chatAPI = {
   createSavedMessages: () => api.post('/chats/saved-messages'),
   getChatById: (id) => api.get(`/chats/${id}`),
   updateChat: (id, data) => api.put(`/chats/${id}`, data),
-  deleteChat: (id) => api.delete(`/chats/${id}`),
+  deleteChat: (id, forEveryone) => api.delete(`/chats/${id}`, { data: { forEveryone } }),
+  leaveGroup: (chatId) => api.post(`/chats/${chatId}/leave`),
   addMember: (chatId, userId) => api.post(`/chats/${chatId}/members`, { user_id: userId }),
   removeMember: (chatId, userId) => api.delete(`/chats/${chatId}/members/${userId}`)
 };

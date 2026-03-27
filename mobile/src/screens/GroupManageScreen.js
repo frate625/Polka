@@ -11,16 +11,32 @@ import {
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { userAPI, chatAPI } from '../services/api';
+import { useAuth } from '../store/AuthContext';
 
 export default function GroupManageScreen() {
   const route = useRoute();
   const navigation = useNavigation();
   const { chatId, currentMembers = [] } = route.params;
+  const { user: currentUser } = useAuth();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [members, setMembers] = useState(currentMembers);
   const [loading, setLoading] = useState(false);
+  const [chatInfo, setChatInfo] = useState(null);
+
+  useEffect(() => {
+    loadChatInfo();
+  }, []);
+
+  const loadChatInfo = async () => {
+    try {
+      const response = await chatAPI.getChatById(chatId);
+      setChatInfo(response.data);
+    } catch (error) {
+      console.error('Ошибка загрузки информации о чате:', error);
+    }
+  };
 
   // Поиск пользователей
   const searchUsers = async (query) => {
@@ -96,25 +112,40 @@ export default function GroupManageScreen() {
   };
 
   // Рендер участника группы
-  const renderMember = ({ item }) => (
-    <View style={styles.memberItem}>
-      <View style={styles.avatar}>
-        <Text style={styles.avatarText}>
-          {item.username[0]?.toUpperCase()}
-        </Text>
+  const renderMember = ({ item }) => {
+    const isOwner = chatInfo?.owner_id === item.id;
+    const isCurrentUserOwner = chatInfo?.owner_id === currentUser?.id;
+    const canRemove = isCurrentUserOwner && item.id !== currentUser?.id;
+
+    return (
+      <View style={styles.memberItem}>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>
+            {item.username[0]?.toUpperCase()}
+          </Text>
+        </View>
+        <View style={styles.userInfo}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={styles.username}>{item.username}</Text>
+            {isOwner && (
+              <View style={styles.ownerBadge}>
+                <Text style={styles.ownerBadgeText}>Владелец</Text>
+              </View>
+            )}
+          </View>
+          <Text style={styles.userEmail}>{item.email}</Text>
+        </View>
+        {canRemove && (
+          <TouchableOpacity
+            style={styles.removeButton}
+            onPress={() => removeMember(item)}
+          >
+            <Text style={styles.removeText}>Удалить</Text>
+          </TouchableOpacity>
+        )}
       </View>
-      <View style={styles.userInfo}>
-        <Text style={styles.username}>{item.username}</Text>
-        <Text style={styles.userEmail}>{item.email}</Text>
-      </View>
-      <TouchableOpacity
-        style={styles.removeButton}
-        onPress={() => removeMember(item)}
-      >
-        <Text style={styles.removeText}>Удалить</Text>
-      </TouchableOpacity>
-    </View>
-  );
+    );
+  };
 
   // Рендер пользователя из поиска
   const renderSearchUser = ({ item }) => (
@@ -228,6 +259,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#000',
     marginBottom: 2
+  },
+  ownerBadge: {
+    marginLeft: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    backgroundColor: '#007AFF',
+    borderRadius: 4
+  },
+  ownerBadgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '600'
   },
   userEmail: {
     fontSize: 13,

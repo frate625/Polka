@@ -494,17 +494,17 @@ export default function ChatInfoScreen() {
       {/* Секции с категориями */}
       <View style={[styles.section, { backgroundColor: theme.colors.card, marginTop: 12 }]}>
         <TouchableOpacity style={[styles.sectionItem, { borderBottomColor: theme.colors.border }]} onPress={() => setActiveTab('media')}>
-          <Text style={styles.sectionIcon}>🖼️</Text>
+          <Image source={require('../../assets/icons/image.png')} style={styles.sectionIconImage} resizeMode="contain" />
           <Text style={[styles.sectionText, { color: theme.colors.text }]}>Фотографии</Text>
           <Text style={[styles.sectionArrow, { color: theme.colors.secondaryText }]}>›</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.sectionItem, { borderBottomColor: theme.colors.border }]} onPress={() => setActiveTab('video_notes')}>
-          <Text style={styles.sectionIcon}>⭕</Text>
+          <Image source={require('../../assets/icons/video-note.png')} style={styles.sectionIconImage} resizeMode="contain" />
           <Text style={[styles.sectionText, { color: theme.colors.text }]}>Видео</Text>
           <Text style={[styles.sectionArrow, { color: theme.colors.secondaryText }]}>›</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.sectionItem, { borderBottomWidth: 0 }]} onPress={() => setActiveTab('voice')}>
-          <Text style={styles.sectionIcon}>🎤</Text>
+          <Image source={require('../../assets/icons/microphone-alt.png')} style={styles.sectionIconImage} resizeMode="contain" />
           <Text style={[styles.sectionText, { color: theme.colors.text }]}>Аудиозаписи</Text>
           <Text style={[styles.sectionArrow, { color: theme.colors.secondaryText }]}>›</Text>
         </TouchableOpacity>
@@ -512,12 +512,12 @@ export default function ChatInfoScreen() {
 
       <View style={[styles.section, { backgroundColor: theme.colors.card, marginTop: 12 }]}>
         <TouchableOpacity style={[styles.sectionItem, { borderBottomColor: theme.colors.border }]} onPress={() => setActiveTab('files')}>
-          <Text style={styles.sectionIcon}>📄</Text>
+          <Image source={require('../../assets/icons/file.png')} style={styles.sectionIconImage} resizeMode="contain" />
           <Text style={[styles.sectionText, { color: theme.colors.text }]}>Файлы</Text>
           <Text style={[styles.sectionArrow, { color: theme.colors.secondaryText }]}>›</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.sectionItem, { borderBottomWidth: 0 }]} onPress={() => setActiveTab('links')}>
-          <Text style={styles.sectionIcon}>🔗</Text>
+          <Image source={require('../../assets/icons/link.png')} style={styles.sectionIconImage} resizeMode="contain" />
           <Text style={[styles.sectionText, { color: theme.colors.text }]}>Ссылки</Text>
           <Text style={[styles.sectionArrow, { color: theme.colors.secondaryText }]}>›</Text>
         </TouchableOpacity>
@@ -674,6 +674,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     marginRight: 16,
     width: 28
+  },
+  sectionIconImage: {
+    width: 24,
+    height: 24,
+    marginRight: 16
   },
   sectionText: {
     flex: 1,

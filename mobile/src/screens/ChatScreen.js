@@ -25,6 +25,8 @@ import RecordButton from '../components/RecordButton';
 import CallScreen from '../components/CallScreen';
 import ChatBackground from '../components/ChatBackground';
 import useWebRTC from '../hooks/useWebRTC';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { CHAT_THEMES } from './ChatThemeScreen';
 
 export default function ChatScreen() {
   const route = useRoute();
@@ -45,6 +47,7 @@ export default function ChatScreen() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showForwardModal, setShowForwardModal] = useState(false);
   const [forwardChats, setForwardChats] = useState([]);
+  const [chatThemeId, setChatThemeId] = useState('default');
   const flatListRef = useRef(null);
   const typingTimeout = useRef(null);
 
@@ -160,6 +163,15 @@ export default function ChatScreen() {
           )}
           <TouchableOpacity
             style={{ padding: 5, marginHorizontal: 5 }}
+            onPress={() => navigation.navigate('ChatTheme', {
+              chatId,
+              chatName
+            })}
+          >
+            <Text style={{ fontSize: 20 }}>🎨</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{ padding: 5, marginHorizontal: 5 }}
             onPress={() => navigation.navigate('ChatInfo', {
               chatId,
               chatName
@@ -263,6 +275,34 @@ export default function ChatScreen() {
     chatIdRef.current = chatId;
     userIdRef.current = user.id;
   }, [chatId, user.id]);
+
+  // Загрузка темы чата
+  useEffect(() => {
+    loadChatTheme();
+    
+    // Регистрируем callback для обновления темы
+    global.chatThemeUpdateCallback = (updatedChatId, themeId) => {
+      if (updatedChatId === chatId) {
+        setChatThemeId(themeId);
+      }
+    };
+    
+    return () => {
+      global.chatThemeUpdateCallback = null;
+    };
+  }, [chatId]);
+
+  const loadChatTheme = async () => {
+    try {
+      const key = `chat_theme_${chatId}`;
+      const saved = await AsyncStorage.getItem(key);
+      if (saved) {
+        setChatThemeId(saved);
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки темы чата:', error);
+    }
+  };
 
   const handleNewMessage = useCallback((message) => {
     console.log('🔔 Получено событие new_message:', {
@@ -552,13 +592,18 @@ export default function ChatScreen() {
     setInputText('');
   };
 
+  // Получаем цвета выбранной темы чата
+  const selectedTheme = CHAT_THEMES.find(t => t.id === chatThemeId) || CHAT_THEMES[0];
+  const isDark = theme.name === 'dark';
+  const chatThemeColors = isDark ? selectedTheme.colors.dark : selectedTheme.colors.light;
+
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: theme.colors.secondaryBackground }]}
+      style={[styles.container, { backgroundColor: chatThemeColors.bg }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      <ChatBackground />
+      <ChatBackground chatTheme={chatThemeId} customColors={chatThemeColors} />
       <FlatList
         ref={flatListRef}
         data={messagesWithSeparators}

@@ -289,16 +289,29 @@ export default function MessageItem({ message, isOwnMessage, onLongPress }) {
   };
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.8}
-      onLongPress={() => onLongPress && onLongPress(message)}
-      delayLongPress={500}
-    >
-      <View style={[styles.container, isOwnMessage && styles.ownMessage]}>
-        {!isOwnMessage && message.sender && (
-          <Text style={styles.senderName}>{message.sender.username}</Text>
-        )}
-        {message.reply_to && (
+    <View style={[styles.messageRow, isOwnMessage && styles.ownMessageRow]}>
+      {!isOwnMessage && message.sender && (
+        <View style={styles.avatarContainer}>
+          {message.sender.avatar_url ? (
+            <Image source={{ uri: message.sender.avatar_url }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarText}>{message.sender.username?.[0]?.toUpperCase() || 'U'}</Text>
+            </View>
+          )}
+        </View>
+      )}
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onLongPress={() => onLongPress && onLongPress(message)}
+        delayLongPress={500}
+        style={{ flex: 1 }}
+      >
+        <View style={[styles.container, isOwnMessage && styles.ownMessage]}>
+          {!isOwnMessage && message.sender && (
+            <Text style={styles.senderName}>{message.sender.username}</Text>
+          )}
+          {message.reply_to && (
           <View style={styles.replyIndicator}>
             <View style={styles.replyLine} />
             <View style={styles.replyContent}>
@@ -346,16 +359,46 @@ export default function MessageItem({ message, isOwnMessage, onLongPress }) {
           )}
         </View>
       </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  messageRow: {
+    flexDirection: 'row',
     marginVertical: 4,
     marginHorizontal: 10,
-    maxWidth: '80%',
-    alignSelf: 'flex-start'
+    alignItems: 'flex-end'
+  },
+  ownMessageRow: {
+    flexDirection: 'row-reverse'
+  },
+  avatarContainer: {
+    width: 32,
+    height: 32,
+    marginRight: 8
+  },
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16
+  },
+  avatarPlaceholder: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  avatarText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600'
+  },
+  container: {
+    maxWidth: '80%'
   },
   ownMessage: {
     alignSelf: 'flex-end'

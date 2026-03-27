@@ -31,8 +31,8 @@ const VideoNotePicker = forwardRef(({ onVideoNoteSelected, onCancel }, ref) => {
   }));
 
   const startRecording = async () => {
-    if (Platform.OS !== 'web') {
-      Alert.alert('Ошибка', 'Кружочки доступны только в веб-версии');
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      Alert.alert('Ошибка', 'Запись видео недоступна на этом устройстве');
       return;
     }
 

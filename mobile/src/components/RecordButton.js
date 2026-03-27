@@ -49,11 +49,6 @@ export default function RecordButton({ onVoiceSelected, onVideoNoteSelected }) {
   };
 
   const startRecording = () => {
-    if (Platform.OS !== 'web') {
-      Alert.alert('Ошибка', 'Запись доступна только в веб-версии');
-      return;
-    }
-
     setIsRecording(true);
     
     // Если в режиме video_note - записываем голос
@@ -73,6 +68,14 @@ export default function RecordButton({ onVoiceSelected, onVideoNoteSelected }) {
     setIsRecording(false);
   };
 
+  const handleContextMenu = (e) => {
+    if (Platform.OS === 'web') {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  };
+
   return (
     <>
       <TouchableOpacity
@@ -80,13 +83,23 @@ export default function RecordButton({ onVoiceSelected, onVideoNoteSelected }) {
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         activeOpacity={0.7}
+        onLongPress={() => {}} // Предотвращаем стандартное долгое нажатие
+        {...(Platform.OS === 'web' && { onContextMenu: handleContextMenu })}
       >
         <Image 
           source={mode === 'video_note' 
             ? require('../../assets/icons/microphone.png')
             : require('../../assets/icons/video-message.png')
           }
-          style={{ width: 28, height: 28 }}
+          style={[
+            { width: 28, height: 28 },
+            Platform.OS === 'web' && {
+              userSelect: 'none',
+              WebkitUserSelect: 'none',
+              WebkitTouchCallout: 'none',
+              pointerEvents: 'none'
+            }
+          ]}
           resizeMode="contain"
         />
       </TouchableOpacity>
@@ -114,7 +127,13 @@ export default function RecordButton({ onVoiceSelected, onVideoNoteSelected }) {
 
 const styles = StyleSheet.create({
   button: {
-    padding: 8
+    padding: 8,
+    ...(Platform.OS === 'web' && {
+      userSelect: 'none',
+      WebkitUserSelect: 'none',
+      WebkitTouchCallout: 'none',
+      cursor: 'pointer'
+    })
   },
   buttonText: {
     fontSize: 28

@@ -29,8 +29,8 @@ const VoicePicker = forwardRef(({ onVoiceSelected, onCancel }, ref) => {
   }));
 
   const startRecording = async () => {
-    if (Platform.OS !== 'web') {
-      Alert.alert('Ошибка', 'Голосовые сообщения доступны только в веб-версии');
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      Alert.alert('Ошибка', 'Запись голоса недоступна на этом устройстве');
       return;
     }
 

@@ -22,8 +22,8 @@ const Stack = createStackNavigator();
 // Стек для чатов
 function ChatsStack() {
   const { theme } = useTheme();
-  const isDark = theme.name === 'dark';
-  const headerBg = isDark ? '#1a1a1a' : '#ffffff';
+  const isDark = theme.mode === 'dark';
+  const headerBg = isDark ? theme.colors.secondaryBackground : theme.colors.secondaryBackground;
   
   return (
     <Stack.Navigator
@@ -86,8 +86,8 @@ function ChatsStack() {
 // Стек для профиля
 function ProfileStack() {
   const { theme } = useTheme();
-  const isDark = theme.name === 'dark';
-  const headerBg = isDark ? '#1a1a1a' : '#ffffff';
+  const isDark = theme.mode === 'dark';
+  const headerBg = isDark ? theme.colors.secondaryBackground : theme.colors.secondaryBackground;
   
   return (
     <Stack.Navigator
@@ -110,8 +110,8 @@ function ProfileStack() {
 // Главный таб навигатор
 export default function MainNavigator() {
   const { theme } = useTheme();
-  const isDark = theme.name === 'dark';
-  const tabBarBg = isDark ? '#1a1a1a' : '#ffffff';
+  const isDark = theme.mode === 'dark';
+  const tabBarBg = theme.colors.secondaryBackground;
   
   return (
     <Tab.Navigator 
@@ -119,7 +119,7 @@ export default function MainNavigator() {
         headerShown: false,
         tabBarStyle: {
           backgroundColor: tabBarBg,
-          borderTopColor: isDark ? 'rgba(255,255,255,0.1)' : '#e0e0e0'
+          borderTopColor: isDark ? 'rgba(255,255,255,0.1)' : theme.colors.border
         },
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.secondaryText

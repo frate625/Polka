@@ -128,7 +128,7 @@ export default function ChatThemeScreen() {
       <View style={styles.themesContainer}>
         {CHAT_THEMES.map((chatTheme) => {
           const isSelected = selectedTheme === chatTheme.id;
-          const isDark = theme.name === 'dark';
+          const isDark = theme.mode === 'dark';
           const themeColors = chatTheme.colors 
             ? (isDark ? chatTheme.colors.dark : chatTheme.colors.light)
             : { bg: theme.colors.secondaryBackground };

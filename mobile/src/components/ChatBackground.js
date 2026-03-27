@@ -10,7 +10,7 @@ export default function ChatBackground({ chatTheme, customColors }) {
     return null; // Для мобильных пока не добавляем
   }
 
-  const isDark = theme.name === 'dark';
+  const isDark = theme.mode === 'dark';
   const patternColor = customColors?.pattern || (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(210,180,140,0.15)');
   
   return (

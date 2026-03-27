@@ -116,7 +116,12 @@ export default function ChatScreen() {
 
   // Настройка header с кнопками
   useEffect(() => {
+    const isDark = theme.mode === 'dark';
     navigation.setOptions({
+      headerStyle: {
+        backgroundColor: theme.colors.secondaryBackground
+      },
+      headerTintColor: theme.colors.text,
       headerTitle: () => (
         <TouchableOpacity
           onPress={() => {
@@ -129,7 +134,7 @@ export default function ChatScreen() {
           }}
           disabled={!isPersonalChat}
         >
-          <Text style={{ fontSize: 17, fontWeight: '600', color: '#000' }}>
+          <Text style={{ fontSize: 17, fontWeight: '600', color: theme.colors.text }}>
             {chatName}
           </Text>
         </TouchableOpacity>
@@ -201,7 +206,7 @@ export default function ChatScreen() {
         </View>
       )
     });
-  }, [chatType, chatId, chatMembers, chatName, recipientId]);
+  }, [chatType, chatId, chatMembers, chatName, recipientId, theme]);
 
   // Загрузка сообщений при открытии чата
   useEffect(() => {
@@ -596,7 +601,7 @@ export default function ChatScreen() {
 
   // Получаем цвета выбранной темы чата
   const selectedTheme = CHAT_THEMES.find(t => t.id === chatThemeId) || CHAT_THEMES[0];
-  const isDark = theme.name === 'dark';
+  const isDark = theme.mode === 'dark';
   
   // Если тема "none" или цвета не заданы, используем цвета из профиля
   const chatThemeColors = (!selectedTheme.colors || chatThemeId === 'none')

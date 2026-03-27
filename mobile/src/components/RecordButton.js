@@ -12,7 +12,7 @@ import VoicePicker from './VoicePicker';
 import VideoNotePicker from './VideoNotePicker';
 
 export default function RecordButton({ onVoiceSelected, onVideoNoteSelected }) {
-  const [mode, setMode] = useState('instagram'); // 'instagram' или 'video_note'
+  const [mode, setMode] = useState('video_note'); // 'video_note' или 'instagram'
   const [isRecording, setIsRecording] = useState(false);
   const pressStartTime = useRef(null);
   const longPressTimer = useRef(null);
@@ -42,7 +42,7 @@ export default function RecordButton({ onVoiceSelected, onVideoNoteSelected }) {
     // Если нажатие было коротким (<1 сек) и не идет запись
     if (pressDuration < 1000 && !isRecording) {
       // Переключаем режим
-      const newMode = mode === 'instagram' ? 'video_note' : 'instagram';
+      const newMode = mode === 'video_note' ? 'instagram' : 'video_note';
       console.log(`🔄 Переключение режима: ${mode} → ${newMode}`);
       setMode(newMode);
     }
@@ -56,9 +56,9 @@ export default function RecordButton({ onVoiceSelected, onVideoNoteSelected }) {
 
     setIsRecording(true);
     
-    // Если в режиме instagram - записываем голос
-    // Если в режиме video_note - записываем видео-кружок
-    if (mode === 'instagram') {
+    // Если в режиме video_note - записываем голос
+    // Если в режиме instagram - записываем видео-кружок
+    if (mode === 'video_note') {
       if (voicePickerRef.current) {
         voicePickerRef.current.startRecording();
       }
@@ -82,9 +82,9 @@ export default function RecordButton({ onVoiceSelected, onVideoNoteSelected }) {
         activeOpacity={0.7}
       >
         <Image 
-          source={mode === 'instagram' 
-            ? require('../../assets/icons/instagram.png')
-            : require('../../assets/icons/video-note.png')
+          source={mode === 'video_note' 
+            ? require('../../assets/icons/video-note.png')
+            : require('../../assets/icons/instagram.png')
           }
           style={{ width: 28, height: 28 }}
           resizeMode="contain"

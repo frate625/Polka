@@ -193,10 +193,18 @@ export default function MessageItem({ message, isOwnMessage, onLongPress }) {
         );
         
         console.log('🎥 Video note URL:', videoNoteUrl);
+        console.log('🎥 Message file_url:', message.file_url);
         
-        const handleVideoClick = () => {
+        const handleVideoClick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
           const video = videoRef.current;
-          if (!video) return;
+          if (!video) {
+            console.log('❌ Video ref not found');
+            return;
+          }
+          
+          console.log('🎬 Video click - readyState:', video.readyState, 'paused:', video.paused);
           
           // Перематываем на начало
           video.currentTime = 0;
@@ -207,7 +215,9 @@ export default function MessageItem({ message, isOwnMessage, onLongPress }) {
           // Скрываем кнопку play
           setShowPlayButton(false);
           // Воспроизводим
-          video.play().catch(err => {
+          video.play().then(() => {
+            console.log('✅ Video playing with sound');
+          }).catch(err => {
             console.log('❌ Play error:', err);
             setShowPlayButton(true);
           });
@@ -218,25 +228,43 @@ export default function MessageItem({ message, isOwnMessage, onLongPress }) {
             <video
               ref={(el) => { videoRef.current = el; }}
               src={videoNoteUrl}
-              autoPlay
-              loop
-              muted
-              playsInline
-              webkit-playsinline="true"
-              x-webkit-airplay="allow"
-              preload="auto"
+              autoPlay={true}
+              loop={true}
+              muted={true}
+              playsInline={true}
+              controls={false}
+              preload="metadata"
               onClick={handleVideoClick}
+              onLoadStart={() => {
+                console.log('📥 Video load start');
+              }}
+              onLoadedMetadata={(e) => {
+                const video = e.target;
+                console.log('📊 Video metadata loaded - duration:', video.duration, 'videoWidth:', video.videoWidth, 'videoHeight:', video.videoHeight);
+              }}
+              onCanPlay={() => {
+                console.log('✅ Video can play');
+                const video = videoRef.current;
+                if (video && video.paused) {
+                  video.play().catch(err => {
+                    console.log('🔇 AutoPlay blocked:', err.message);
+                    setShowPlayButton(true);
+                  });
+                }
+              }}
               onPlay={() => {
                 console.log('▶️ Video playing');
                 setShowPlayButton(false);
               }}
               onPause={() => {
+                console.log('⏸️ Video paused');
                 const video = videoRef.current;
                 if (video && !video.ended) {
                   setShowPlayButton(true);
                 }
               }}
               onEnded={(e) => {
+                console.log('🏁 Video ended');
                 const video = e.target;
                 // После окончания возвращаем зацикливание и без звука
                 video.loop = true;
@@ -248,23 +276,23 @@ export default function MessageItem({ message, isOwnMessage, onLongPress }) {
                 });
               }}
               onError={(e) => {
-                console.error('❌ Video error:', e);
+                const video = e.target;
+                console.error('❌ Video error:', {
+                  error: video.error,
+                  code: video.error?.code,
+                  message: video.error?.message,
+                  networkState: video.networkState,
+                  readyState: video.readyState,
+                  src: video.src
+                });
                 setShowPlayButton(true);
               }}
               onLoadedData={() => {
-                console.log('✅ Video loaded');
-                // Пробуем запустить автовоспроизведение
-                const video = videoRef.current;
-                if (video) {
-                  video.play().catch(err => {
-                    console.log('🔇 AutoPlay blocked, showing play button');
-                    setShowPlayButton(true);
-                  });
-                }
+                console.log('✅ Video data loaded');
               }}
               style={{
-                width: 200,
-                height: 200,
+                width: '200px',
+                height: '200px',
                 borderRadius: '50%',
                 objectFit: 'cover',
                 backgroundColor: '#000',

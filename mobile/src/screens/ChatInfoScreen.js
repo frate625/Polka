@@ -585,6 +585,18 @@ export default function ChatInfoScreen() {
         </View>
       )}
 
+      {/* Настройки чата */}
+      <View style={[styles.section, { backgroundColor: theme.colors.card, marginTop: 12 }]}>
+        <TouchableOpacity 
+          style={[styles.sectionItem, { borderBottomWidth: 0 }]} 
+          onPress={() => navigation.navigate('ChatTheme', { chatId, chatName })}
+        >
+          <Text style={styles.sectionIcon}>🎨</Text>
+          <Text style={[styles.sectionText, { color: theme.colors.text }]}>Тема чата</Text>
+          <Text style={[styles.sectionArrow, { color: theme.colors.secondaryText }]}>›</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Кнопки управления чатом */}
       <View style={[styles.actionsContainer, { backgroundColor: theme.colors.card, marginTop: 12 }]}>
         {chatInfo?.type === 'group' ? (

@@ -171,15 +171,6 @@ export default function ChatScreen() {
           )}
           <TouchableOpacity
             style={{ padding: 5, marginHorizontal: 5 }}
-            onPress={() => navigation.navigate('ChatTheme', {
-              chatId,
-              chatName
-            })}
-          >
-            <Text style={{ fontSize: 20 }}>🎨</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={{ padding: 5, marginHorizontal: 5 }}
             onPress={() => navigation.navigate('ChatInfo', {
               chatId,
               chatName

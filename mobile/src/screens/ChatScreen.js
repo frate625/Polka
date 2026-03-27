@@ -141,7 +141,7 @@ export default function ChatScreen() {
               >
                 <Image 
                   source={require('../../assets/icons/phone-call.png')} 
-                  style={{ width: 22, height: 22, tintColor: '#007AFF' }}
+                  style={{ width: 22, height: 22 }}
                   resizeMode="contain"
                 />
               </TouchableOpacity>
@@ -151,7 +151,7 @@ export default function ChatScreen() {
               >
                 <Image 
                   source={require('../../assets/icons/video-call-alt.png')} 
-                  style={{ width: 22, height: 22, tintColor: '#007AFF' }}
+                  style={{ width: 22, height: 22 }}
                   resizeMode="contain"
                 />
               </TouchableOpacity>
@@ -166,7 +166,7 @@ export default function ChatScreen() {
           >
             <Image 
               source={require('../../assets/icons/info.png')} 
-              style={{ width: 22, height: 22, tintColor: '#007AFF' }}
+              style={{ width: 22, height: 22 }}
               resizeMode="contain"
             />
           </TouchableOpacity>
@@ -180,7 +180,7 @@ export default function ChatScreen() {
             >
               <Image 
                 source={require('../../assets/icons/settings.png')} 
-                style={{ width: 22, height: 22, tintColor: '#007AFF' }}
+                style={{ width: 22, height: 22 }}
                 resizeMode="contain"
               />
             </TouchableOpacity>
@@ -624,7 +624,7 @@ export default function ChatScreen() {
           ) : (
             <Image 
               source={require('../../assets/icons/send.png')} 
-              style={{ width: 20, height: 20, tintColor: '#fff' }}
+              style={{ width: 20, height: 20 }}
               resizeMode="contain"
             />
           )}

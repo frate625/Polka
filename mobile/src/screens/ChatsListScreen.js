@@ -36,7 +36,7 @@ export default function ChatsListScreen() {
         >
           <Image 
             source={require('../../assets/icons/search-alt.png')} 
-            style={{ width: 22, height: 22, tintColor: '#007AFF' }}
+            style={{ width: 22, height: 22 }}
             resizeMode="contain"
           />
         </TouchableOpacity>

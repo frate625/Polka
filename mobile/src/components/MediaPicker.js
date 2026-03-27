@@ -219,7 +219,7 @@ export default function MediaPicker({ onMediaSelected }) {
       <TouchableOpacity style={styles.button} onPress={() => setShowMenu(true)}>
         <Image 
           source={require('../../assets/icons/attachment.png')} 
-          style={{ width: 24, height: 24, tintColor: '#007AFF' }}
+          style={{ width: 24, height: 24 }}
           resizeMode="contain"
         />
       </TouchableOpacity>
@@ -245,20 +245,6 @@ export default function MediaPicker({ onMediaSelected }) {
               <Text style={styles.menuIcon}>📄</Text>
               <Text style={styles.menuText}>Файл</Text>
             </TouchableOpacity>
-
-            {Platform.OS === 'web' && (
-              <TouchableOpacity style={styles.menuItem} onPress={startRecording}>
-                <Text style={styles.menuIcon}>🎤</Text>
-                <Text style={styles.menuText}>Голосовое</Text>
-              </TouchableOpacity>
-            )}
-
-            {Platform.OS !== 'web' && (
-              <TouchableOpacity style={styles.menuItem} onPress={takePhoto}>
-                <Text style={styles.menuIcon}>📷</Text>
-                <Text style={styles.menuText}>Камера</Text>
-              </TouchableOpacity>
-            )}
 
             <TouchableOpacity style={[styles.menuItem, styles.cancelItem]} onPress={() => setShowMenu(false)}>
               <Text style={styles.menuText}>Отмена</Text>

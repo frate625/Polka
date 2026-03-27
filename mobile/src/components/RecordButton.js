@@ -87,7 +87,7 @@ export default function RecordButton({ onVoiceSelected, onVideoNoteSelected }) {
             ? require('../../assets/icons/microphone-alt.png')
             : require('../../assets/icons/video-note.png')
           }
-          style={{ width: 24, height: 24, tintColor: '#007AFF' }}
+          style={{ width: 24, height: 24 }}
           resizeMode="contain"
         />
       </TouchableOpacity>

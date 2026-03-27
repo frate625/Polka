@@ -1,10 +1,12 @@
 // Компонент для отображения одного сообщения в чате
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, Linking, Platform } from 'react-native';
 import { getBaseUrl } from '../services/api';
 
 export default function MessageItem({ message, isOwnMessage, onLongPress }) {
   const audioRef = useRef(null);
+  const videoRef = useRef(null);
+  const [showPlayButton, setShowPlayButton] = useState(false);
 
   // Нормализуем URL - заменяем HTTP на HTTPS для production
   const normalizeUrl = (url) => {
@@ -192,57 +194,93 @@ export default function MessageItem({ message, isOwnMessage, onLongPress }) {
         
         console.log('🎥 Video note URL:', videoNoteUrl);
         
+        const handleVideoClick = () => {
+          const video = videoRef.current;
+          if (!video) return;
+          
+          // Перематываем на начало
+          video.currentTime = 0;
+          // Убираем зацикливание
+          video.loop = false;
+          // Включаем звук
+          video.muted = false;
+          // Скрываем кнопку play
+          setShowPlayButton(false);
+          // Воспроизводим
+          video.play().catch(err => {
+            console.log('❌ Play error:', err);
+            setShowPlayButton(true);
+          });
+        };
+        
         return (
           <View style={styles.videoNoteContainer}>
-            {Platform.OS === 'web' ? (
-              <video
-                src={videoNoteUrl}
-                autoPlay
-                loop
-                muted
-                playsInline
-                preload="auto"
-                onClick={(e) => {
-                  const video = e.target;
-                  // Перематываем на начало
-                  video.currentTime = 0;
-                  // Убираем зацикливание
-                  video.loop = false;
-                  // Включаем звук
-                  video.muted = false;
-                  // Воспроизводим
-                  video.play();
-                }}
-                onEnded={(e) => {
-                  const video = e.target;
-                  // После окончания возвращаем зацикливание и без звука
-                  video.loop = true;
-                  video.muted = true;
-                  video.play();
-                }}
-                onError={(e) => console.error('❌ Video error:', e)}
-                onLoadedData={() => console.log('✅ Video loaded')}
-                style={{
-                  width: 200,
-                  height: 200,
-                  borderRadius: '50%',
-                  objectFit: 'cover',
-                  backgroundColor: '#000',
-                  cursor: 'pointer',
-                  display: 'block',
-                  border: 'none',
-                  outline: 'none'
-                }}
-              />
-            ) : (
+            <video
+              ref={(el) => { videoRef.current = el; }}
+              src={videoNoteUrl}
+              autoPlay
+              loop
+              muted
+              playsInline
+              webkit-playsinline="true"
+              x-webkit-airplay="allow"
+              preload="auto"
+              onClick={handleVideoClick}
+              onPlay={() => {
+                console.log('▶️ Video playing');
+                setShowPlayButton(false);
+              }}
+              onPause={() => {
+                const video = videoRef.current;
+                if (video && !video.ended) {
+                  setShowPlayButton(true);
+                }
+              }}
+              onEnded={(e) => {
+                const video = e.target;
+                // После окончания возвращаем зацикливание и без звука
+                video.loop = true;
+                video.muted = true;
+                video.currentTime = 0;
+                video.play().catch(err => {
+                  console.log('Loop play error:', err);
+                  setShowPlayButton(true);
+                });
+              }}
+              onError={(e) => {
+                console.error('❌ Video error:', e);
+                setShowPlayButton(true);
+              }}
+              onLoadedData={() => {
+                console.log('✅ Video loaded');
+                // Пробуем запустить автовоспроизведение
+                const video = videoRef.current;
+                if (video) {
+                  video.play().catch(err => {
+                    console.log('🔇 AutoPlay blocked, showing play button');
+                    setShowPlayButton(true);
+                  });
+                }
+              }}
+              style={{
+                width: 200,
+                height: 200,
+                borderRadius: '50%',
+                objectFit: 'cover',
+                backgroundColor: '#000',
+                cursor: 'pointer',
+                display: 'block',
+                border: 'none',
+                outline: 'none',
+                WebkitTapHighlightColor: 'transparent'
+              }}
+            />
+            {showPlayButton && (
               <TouchableOpacity 
-                style={styles.videoNotePlaceholder}
-                onPress={() => openFile(videoNoteUrl)}
+                style={styles.videoPlayButton}
+                onPress={handleVideoClick}
               >
-                <Text style={styles.videoNoteIcon}>⭕</Text>
-                <Text style={[styles.videoNoteText, isOwnMessage && styles.ownText]}>
-                  Видео-сообщение
-                </Text>
+                <Text style={styles.videoPlayIcon}>▶️</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -613,7 +651,25 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 0
+    borderWidth: 0,
+    position: 'relative'
+  },
+  videoPlayButton: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -30 }, { translateY: -30 }],
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10
+  },
+  videoPlayIcon: {
+    fontSize: 30,
+    color: '#fff'
   },
   videoNotePlaceholder: {
     width: 200,

@@ -12,7 +12,7 @@ import VoicePicker from './VoicePicker';
 import VideoNotePicker from './VideoNotePicker';
 
 export default function RecordButton({ onVoiceSelected, onVideoNoteSelected }) {
-  const [mode, setMode] = useState('voice'); // 'voice' или 'video_note'
+  const [mode, setMode] = useState('instagram'); // 'instagram' или 'video_note'
   const [isRecording, setIsRecording] = useState(false);
   const pressStartTime = useRef(null);
   const longPressTimer = useRef(null);
@@ -42,7 +42,7 @@ export default function RecordButton({ onVoiceSelected, onVideoNoteSelected }) {
     // Если нажатие было коротким (<1 сек) и не идет запись
     if (pressDuration < 1000 && !isRecording) {
       // Переключаем режим
-      const newMode = mode === 'voice' ? 'video_note' : 'voice';
+      const newMode = mode === 'instagram' ? 'video_note' : 'instagram';
       console.log(`🔄 Переключение режима: ${mode} → ${newMode}`);
       setMode(newMode);
     }
@@ -56,14 +56,13 @@ export default function RecordButton({ onVoiceSelected, onVideoNoteSelected }) {
 
     setIsRecording(true);
     
-    // Запускаем соответствующий пикер
-    if (mode === 'voice') {
-      // Trigger VoicePicker
+    // Если в режиме instagram - записываем голос
+    // Если в режиме video_note - записываем видео-кружок
+    if (mode === 'instagram') {
       if (voicePickerRef.current) {
         voicePickerRef.current.startRecording();
       }
     } else {
-      // Trigger VideoNotePicker
       if (videoNotePickerRef.current) {
         videoNotePickerRef.current.startRecording();
       }
@@ -83,11 +82,11 @@ export default function RecordButton({ onVoiceSelected, onVideoNoteSelected }) {
         activeOpacity={0.7}
       >
         <Image 
-          source={mode === 'voice' 
-            ? require('../../assets/icons/microphone-alt.png')
+          source={mode === 'instagram' 
+            ? require('../../assets/icons/instagram.png')
             : require('../../assets/icons/video-note.png')
           }
-          style={{ width: 24, height: 24 }}
+          style={{ width: 28, height: 28 }}
           resizeMode="contain"
         />
       </TouchableOpacity>

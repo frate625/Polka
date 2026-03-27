@@ -682,20 +682,10 @@ export default function ChatScreen() {
             />
           )}
         </TouchableOpacity>
-        <TouchableOpacity style={styles.iconButton}>
-          <Image 
-            source={require('../../assets/icons/microphone-alt.png')} 
-            style={{ width: 24, height: 24 }}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.iconButton}>
-          <Image 
-            source={require('../../assets/icons/instagram.png')} 
-            style={{ width: 24, height: 24 }}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
+        <RecordButton 
+          onVoiceSelected={handleVoiceSelected}
+          onVideoNoteSelected={handleVideoNoteSelected}
+        />
       </View>
 
       {/* Меню действий для сообщения */}
@@ -919,13 +909,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 20,
     fontWeight: '600'
-  },
-  iconButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 4
   },
   typingContainer: {
     padding: 10,

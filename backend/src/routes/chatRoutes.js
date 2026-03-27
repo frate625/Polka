@@ -9,6 +9,7 @@ router.post('/', authMiddleware, chatController.createChat);
 router.get('/:id', authMiddleware, chatController.getChatById);
 router.put('/:id', authMiddleware, chatController.updateChat);
 router.delete('/:id', authMiddleware, chatController.deleteChat);
+router.post('/:id/leave', authMiddleware, chatController.leaveGroup);
 router.post('/:id/members', authMiddleware, chatController.addChatMember);
 router.delete('/:id/members/:userId', authMiddleware, chatController.removeChatMember);
 

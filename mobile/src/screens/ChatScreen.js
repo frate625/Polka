@@ -18,6 +18,7 @@ import { useSocket } from '../store/SocketContext';
 import { useAuth } from '../store/AuthContext';
 import { useTheme } from '../store/ThemeContext';
 import MessageItem from '../components/MessageItem';
+import MessageDateSeparator from '../components/MessageDateSeparator';
 import MediaPicker from '../components/MediaPicker';
 import RecordButton from '../components/RecordButton';
 import CallScreen from '../components/CallScreen';
@@ -62,6 +63,51 @@ export default function ChatScreen() {
   const recipientId = isPersonalChat && chatMembers 
     ? chatMembers.find(m => (m.id || m.user_id) !== user.id)?.id || chatMembers.find(m => (m.id || m.user_id) !== user.id)?.user_id
     : null;
+
+  // Подготовка сообщений с разделителями
+  const prepareMessagesWithSeparators = () => {
+    const items = [];
+    let lastDate = null;
+    let lastTime = null;
+
+    messages.forEach((message, index) => {
+      const messageDate = new Date(message.created_at);
+      const messageDateOnly = new Date(messageDate.getFullYear(), messageDate.getMonth(), messageDate.getDate());
+
+      // Проверяем, нужен ли разделитель даты
+      if (!lastDate || messageDateOnly.getTime() !== lastDate.getTime()) {
+        items.push({
+          type: 'date_separator',
+          id: `date_${message.id}`,
+          date: message.created_at
+        });
+        lastDate = messageDateOnly;
+      }
+
+      // Проверяем, нужен ли временной отступ (более 10 минут)
+      if (lastTime) {
+        const timeDiff = (messageDate.getTime() - lastTime.getTime()) / (1000 * 60); // в минутах
+        if (timeDiff > 10) {
+          items.push({
+            type: 'time_gap',
+            id: `gap_${message.id}`
+          });
+        }
+      }
+
+      // Добавляем само сообщение
+      items.push({
+        type: 'message',
+        ...message
+      });
+
+      lastTime = messageDate;
+    });
+
+    return items;
+  };
+
+  const messagesWithSeparators = prepareMessagesWithSeparators();
 
   // Настройка header с кнопками
   useEffect(() => {
@@ -496,16 +542,24 @@ export default function ChatScreen() {
     >
       <FlatList
         ref={flatListRef}
-        data={messages}
+        data={messagesWithSeparators}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <MessageItem
-            message={item}
-            isOwnMessage={item.sender_id === user.id}
-            onLongPress={() => handleMessageLongPress(item)}
-            theme={theme}
-          />
-        )}
+        renderItem={({ item }) => {
+          if (item.type === 'date_separator') {
+            return <MessageDateSeparator date={item.date} />;
+          } else if (item.type === 'time_gap') {
+            return <View style={{ height: 20 }} />;
+          } else {
+            return (
+              <MessageItem
+                message={item}
+                isOwnMessage={item.sender_id === user.id}
+                onLongPress={() => handleMessageLongPress(item)}
+                theme={theme}
+              />
+            );
+          }
+        }}
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
         ListFooterComponent={
           typingUsers.length > 0 ? (

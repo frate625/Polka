@@ -20,6 +20,14 @@ const Chat = sequelize.define('Chat', {
     type: DataTypes.STRING,
     allowNull: true
   },
+  owner_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
+  },
   last_message_at: {
     type: DataTypes.DATE,
     allowNull: true

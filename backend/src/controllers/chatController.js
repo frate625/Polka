@@ -3,9 +3,12 @@ const { Op } = require('sequelize');
 
 const getUserChats = async (req, res) => {
   try {
-    // Сначала получаем ID чатов где участвует пользователь
+    // Сначала получаем ID чатов где участвует пользователь и чат не скрыт
     const userChatMembers = await ChatMember.findAll({
-      where: { user_id: req.userId },
+      where: { 
+        user_id: req.userId,
+        is_hidden: false
+      },
       attributes: ['chat_id', 'unread_count']
     });
 
@@ -63,26 +66,52 @@ const createChat = async (req, res) => {
     }
 
     if (type === 'private') {
-      const existingChat = await Chat.findOne({
+      // Проверяем существующий приватный чат между этими двумя пользователями
+      const existingChats = await Chat.findAll({
         where: { type: 'private' },
         include: [{
-          model: User,
-          as: 'members',
+          model: ChatMember,
+          as: 'chatMembers',
           where: {
-            id: { [Op.in]: [req.userId, user_ids[0]] }
+            user_id: { [Op.in]: [req.userId, user_ids[0]] }
           },
-          through: { attributes: [] }
+          required: true
         }]
       });
 
-      if (existingChat && existingChat.members.length === 2) {
-        return res.json({ chat: existingChat });
+      // Находим чат где участвуют оба пользователя
+      const existingChat = existingChats.find(chat => {
+        const memberUserIds = chat.chatMembers.map(m => m.user_id);
+        return memberUserIds.includes(req.userId) && memberUserIds.includes(user_ids[0]) && memberUserIds.length === 2;
+      });
+
+      if (existingChat) {
+        // Если чат был скрыт у текущего пользователя, делаем его видимым
+        const myMember = await ChatMember.findOne({
+          where: { chat_id: existingChat.id, user_id: req.userId }
+        });
+
+        if (myMember && myMember.is_hidden) {
+          await myMember.update({ is_hidden: false });
+        }
+
+        // Возвращаем полный чат с участниками
+        const fullChat = await Chat.findByPk(existingChat.id, {
+          include: [{
+            model: User,
+            as: 'members',
+            attributes: ['id', 'username', 'avatar_url', 'is_online']
+          }]
+        });
+
+        return res.json({ chat: fullChat });
       }
     }
 
     const chat = await Chat.create({
       name: type === 'group' ? name : null,
-      type: type || 'private'
+      type: type || 'private',
+      owner_id: type === 'group' ? req.userId : null
     });
 
     const members = [req.userId, ...user_ids];
@@ -198,12 +227,9 @@ const updateChat = async (req, res) => {
       return res.status(404).json({ error: 'Chat not found' });
     }
 
-    const member = await ChatMember.findOne({
-      where: { chat_id: id, user_id: req.userId }
-    });
-
-    if (!member || member.role !== 'admin') {
-      return res.status(403).json({ error: 'Only admins can update chat details' });
+    // Для групповых чатов только владелец может обновлять
+    if (chat.type === 'group' && chat.owner_id !== req.userId) {
+      return res.status(403).json({ error: 'Only group owner can update chat details' });
     }
 
     const updates = {};
@@ -225,21 +251,45 @@ const updateChat = async (req, res) => {
 const deleteChat = async (req, res) => {
   try {
     const { id } = req.params;
+    const { forEveryone } = req.body; // true = удалить для всех, false = только у себя
+
+    const chat = await Chat.findByPk(id);
+    
+    if (!chat) {
+      return res.status(404).json({ error: 'Chat not found' });
+    }
 
     const member = await ChatMember.findOne({
       where: { chat_id: id, user_id: req.userId }
     });
 
     if (!member) {
-      return res.status(404).json({ error: 'Chat not found' });
+      return res.status(404).json({ error: 'You are not a member of this chat' });
     }
 
-    await member.destroy();
-
-    res.json({ message: 'Left chat successfully' });
+    if (forEveryone) {
+      // Удаление для всех - только для приватных чатов
+      if (chat.type === 'private') {
+        // Удаляем все сообщения
+        await Message.destroy({ where: { chat_id: id } });
+        // Удаляем всех участников
+        await ChatMember.destroy({ where: { chat_id: id } });
+        // Удаляем сам чат
+        await chat.destroy();
+        
+        res.json({ message: 'Chat deleted for everyone' });
+      } else {
+        return res.status(400).json({ error: 'Cannot delete group chats for everyone. Leave the group instead.' });
+      }
+    } else {
+      // Удаление только у себя - скрываем чат
+      await member.update({ is_hidden: true });
+      
+      res.json({ message: 'Chat hidden successfully' });
+    }
   } catch (error) {
     console.error('Delete chat error:', error);
-    res.status(500).json({ error: 'Failed to leave chat' });
+    res.status(500).json({ error: 'Failed to delete chat' });
   }
 };
 
@@ -281,12 +331,15 @@ const removeChatMember = async (req, res) => {
   try {
     const { id, userId } = req.params;
 
-    const adminMember = await ChatMember.findOne({
-      where: { chat_id: id, user_id: req.userId, role: 'admin' }
-    });
+    // Проверяем что запрашивающий является владельцем группы
+    const chat = await Chat.findByPk(id);
+    
+    if (!chat) {
+      return res.status(404).json({ error: 'Chat not found' });
+    }
 
-    if (!adminMember) {
-      return res.status(403).json({ error: 'Only admins can remove members' });
+    if (chat.owner_id !== req.userId) {
+      return res.status(403).json({ error: 'Only group owner can remove members' });
     }
 
     const member = await ChatMember.findOne({
@@ -295,6 +348,11 @@ const removeChatMember = async (req, res) => {
 
     if (!member) {
       return res.status(404).json({ error: 'Member not found' });
+    }
+
+    // Владелец не может удалить сам себя
+    if (userId === req.userId) {
+      return res.status(400).json({ error: 'Owner cannot remove themselves. Use leave group instead.' });
     }
 
     await member.destroy();
@@ -306,6 +364,53 @@ const removeChatMember = async (req, res) => {
   }
 };
 
+const leaveGroup = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const chat = await Chat.findByPk(id);
+    
+    if (!chat) {
+      return res.status(404).json({ error: 'Chat not found' });
+    }
+
+    if (chat.type !== 'group') {
+      return res.status(400).json({ error: 'Can only leave group chats' });
+    }
+
+    const member = await ChatMember.findOne({
+      where: { chat_id: id, user_id: req.userId }
+    });
+
+    if (!member) {
+      return res.status(404).json({ error: 'You are not a member of this group' });
+    }
+
+    // Если это владелец группы, нужно передать права другому участнику
+    if (chat.owner_id === req.userId) {
+      const newOwner = await ChatMember.findOne({
+        where: { 
+          chat_id: id,
+          user_id: { [Op.ne]: req.userId }
+        },
+        order: [['joined_at', 'ASC']]
+      });
+
+      if (newOwner) {
+        await chat.update({ owner_id: newOwner.user_id });
+        await newOwner.update({ role: 'admin' });
+      }
+    }
+
+    await member.destroy();
+
+    res.json({ message: 'Left group successfully' });
+  } catch (error) {
+    console.error('Leave group error:', error);
+    res.status(500).json({ error: 'Failed to leave group' });
+  }
+};
+
 module.exports = {
   getUserChats,
   createChat,
@@ -314,5 +419,6 @@ module.exports = {
   updateChat,
   deleteChat,
   addChatMember,
-  removeChatMember
+  removeChatMember,
+  leaveGroup
 };

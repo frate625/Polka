@@ -31,6 +31,10 @@ const ChatMember = sequelize.define('ChatMember', {
   unread_count: {
     type: DataTypes.INTEGER,
     defaultValue: 0
+  },
+  is_hidden: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   }
 }, {
   tableName: 'chat_members',

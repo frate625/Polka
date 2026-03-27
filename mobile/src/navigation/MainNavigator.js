@@ -1,5 +1,6 @@
 // Главный навигатор приложения с вкладками
 import React from 'react';
+import { Image } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 
@@ -84,12 +85,30 @@ export default function MainNavigator() {
       <Tab.Screen
         name="Chats"
         component={ChatsStack}
-        options={{ tabBarLabel: 'Чаты' }}
+        options={{ 
+          tabBarLabel: 'Чаты',
+          tabBarIcon: ({ color, size }) => (
+            <Image 
+              source={require('../../assets/icons/chats-tab.png')} 
+              style={{ width: size, height: size, tintColor: color }}
+              resizeMode="contain"
+            />
+          )
+        }}
       />
       <Tab.Screen
         name="Profile"
         component={ProfileStack}
-        options={{ tabBarLabel: 'Профиль' }}
+        options={{ 
+          tabBarLabel: 'Профиль',
+          tabBarIcon: ({ color, size }) => (
+            <Image 
+              source={require('../../assets/icons/profile-tab.png')} 
+              style={{ width: size, height: size, tintColor: color }}
+              resizeMode="contain"
+            />
+          )
+        }}
       />
     </Tab.Navigator>
   );

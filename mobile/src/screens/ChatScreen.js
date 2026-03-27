@@ -10,7 +10,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-  Modal
+  Modal,
+  Image
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { messageAPI, chatAPI } from '../services/api';
@@ -138,13 +139,21 @@ export default function ChatScreen() {
                 style={{ padding: 5, marginHorizontal: 5 }}
                 onPress={() => makeCall(chatId, recipientId, false)}
               >
-                <Text style={{ color: '#007AFF', fontSize: 20 }}>📞</Text>
+                <Image 
+                  source={require('../../assets/icons/phone-call.png')} 
+                  style={{ width: 22, height: 22, tintColor: '#007AFF' }}
+                  resizeMode="contain"
+                />
               </TouchableOpacity>
               <TouchableOpacity
                 style={{ padding: 5, marginHorizontal: 5 }}
                 onPress={() => makeCall(chatId, recipientId, true)}
               >
-                <Text style={{ color: '#007AFF', fontSize: 20 }}>📹</Text>
+                <Image 
+                  source={require('../../assets/icons/video-call-alt.png')} 
+                  style={{ width: 22, height: 22, tintColor: '#007AFF' }}
+                  resizeMode="contain"
+                />
               </TouchableOpacity>
             </>
           )}
@@ -155,7 +164,11 @@ export default function ChatScreen() {
               chatName
             })}
           >
-            <Text style={{ color: '#007AFF', fontSize: 20 }}>ℹ️</Text>
+            <Image 
+              source={require('../../assets/icons/info.png')} 
+              style={{ width: 22, height: 22, tintColor: '#007AFF' }}
+              resizeMode="contain"
+            />
           </TouchableOpacity>
           {chatType === 'group' && (
             <TouchableOpacity
@@ -165,7 +178,11 @@ export default function ChatScreen() {
                 currentMembers: chatMembers || []
               })}
             >
-              <Text style={{ color: '#007AFF', fontSize: 20 }}>⚙️</Text>
+              <Image 
+                source={require('../../assets/icons/settings.png')} 
+                style={{ width: 22, height: 22, tintColor: '#007AFF' }}
+                resizeMode="contain"
+              />
             </TouchableOpacity>
           )}
         </View>
@@ -602,9 +619,15 @@ export default function ChatScreen() {
           onPress={sendMessage}
           disabled={!inputText.trim()}
         >
-          <Text style={styles.sendButtonText}>
-            {editingMessage ? '✓' : '➤'}
-          </Text>
+          {editingMessage ? (
+            <Text style={styles.sendButtonText}>✓</Text>
+          ) : (
+            <Image 
+              source={require('../../assets/icons/send.png')} 
+              style={{ width: 20, height: 20, tintColor: '#fff' }}
+              resizeMode="contain"
+            />
+          )}
         </TouchableOpacity>
         <RecordButton 
           onVoiceSelected={handleVoiceSelected}

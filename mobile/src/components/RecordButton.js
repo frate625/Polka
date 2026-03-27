@@ -5,7 +5,8 @@ import {
   Text,
   StyleSheet,
   Platform,
-  Alert
+  Alert,
+  Image
 } from 'react-native';
 import VoicePicker from './VoicePicker';
 import VideoNotePicker from './VideoNotePicker';
@@ -81,9 +82,14 @@ export default function RecordButton({ onVoiceSelected, onVideoNoteSelected }) {
         onPressOut={handlePressOut}
         activeOpacity={0.7}
       >
-        <Text style={styles.buttonText}>
-          {mode === 'voice' ? '🎤' : '⭕'}
-        </Text>
+        <Image 
+          source={mode === 'voice' 
+            ? require('../../assets/icons/microphone-alt.png')
+            : require('../../assets/icons/video-note.png')
+          }
+          style={{ width: 24, height: 24, tintColor: '#007AFF' }}
+          resizeMode="contain"
+        />
       </TouchableOpacity>
 
       {/* Скрытые пикеры - управляются через ref */}

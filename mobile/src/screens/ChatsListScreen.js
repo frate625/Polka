@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   RefreshControl,
-  Alert
+  Alert,
+  Image
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { chatAPI } from '../services/api';
@@ -33,7 +34,11 @@ export default function ChatsListScreen() {
           style={{ marginRight: 15 }}
           onPress={() => navigation.navigate('Search')}
         >
-          <Text style={{ fontSize: 20 }}>🔍</Text>
+          <Image 
+            source={require('../../assets/icons/search-alt.png')} 
+            style={{ width: 22, height: 22, tintColor: '#007AFF' }}
+            resizeMode="contain"
+          />
         </TouchableOpacity>
       )
     });

@@ -1,6 +1,6 @@
 // Компонент для выбора и отправки медиа-файлов
 import React, { useState, useRef } from 'react';
-import { TouchableOpacity, Text, View, StyleSheet, Alert, Platform, Modal } from 'react-native';
+import { TouchableOpacity, Text, View, StyleSheet, Alert, Platform, Modal, Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { uploadAPI } from '../services/api';
@@ -217,7 +217,11 @@ export default function MediaPicker({ onMediaSelected }) {
   return (
     <View>
       <TouchableOpacity style={styles.button} onPress={() => setShowMenu(true)}>
-        <Text style={styles.buttonText}>📎</Text>
+        <Image 
+          source={require('../../assets/icons/attachment.png')} 
+          style={{ width: 24, height: 24, tintColor: '#007AFF' }}
+          resizeMode="contain"
+        />
       </TouchableOpacity>
 
       <Modal

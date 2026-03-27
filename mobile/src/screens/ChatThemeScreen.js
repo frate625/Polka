@@ -14,6 +14,12 @@ import { useTheme } from '../store/ThemeContext';
 
 const CHAT_THEMES = [
   {
+    id: 'none',
+    name: 'Без темы',
+    emoji: '⚫',
+    colors: null // Использовать цвета из профиля
+  },
+  {
     id: 'default',
     name: 'По умолчанию',
     emoji: '⚪',
@@ -86,6 +92,8 @@ export default function ChatThemeScreen() {
       const saved = await AsyncStorage.getItem(key);
       if (saved) {
         setSelectedTheme(saved);
+      } else {
+        setSelectedTheme('none'); // По умолчанию "Без темы"
       }
     } catch (error) {
       console.error('Ошибка загрузки темы чата:', error);
@@ -121,7 +129,9 @@ export default function ChatThemeScreen() {
         {CHAT_THEMES.map((chatTheme) => {
           const isSelected = selectedTheme === chatTheme.id;
           const isDark = theme.name === 'dark';
-          const themeColors = isDark ? chatTheme.colors.dark : chatTheme.colors.light;
+          const themeColors = chatTheme.colors 
+            ? (isDark ? chatTheme.colors.dark : chatTheme.colors.light)
+            : { bg: theme.colors.secondaryBackground };
           
           return (
             <TouchableOpacity

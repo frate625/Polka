@@ -47,7 +47,7 @@ export default function ChatScreen() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showForwardModal, setShowForwardModal] = useState(false);
   const [forwardChats, setForwardChats] = useState([]);
-  const [chatThemeId, setChatThemeId] = useState('default');
+  const [chatThemeId, setChatThemeId] = useState('none');
   const flatListRef = useRef(null);
   const typingTimeout = useRef(null);
 
@@ -298,6 +298,8 @@ export default function ChatScreen() {
       const saved = await AsyncStorage.getItem(key);
       if (saved) {
         setChatThemeId(saved);
+      } else {
+        setChatThemeId('none'); // По умолчанию "Без темы"
       }
     } catch (error) {
       console.error('Ошибка загрузки темы чата:', error);
@@ -595,7 +597,11 @@ export default function ChatScreen() {
   // Получаем цвета выбранной темы чата
   const selectedTheme = CHAT_THEMES.find(t => t.id === chatThemeId) || CHAT_THEMES[0];
   const isDark = theme.name === 'dark';
-  const chatThemeColors = isDark ? selectedTheme.colors.dark : selectedTheme.colors.light;
+  
+  // Если тема "none" или цвета не заданы, используем цвета из профиля
+  const chatThemeColors = (!selectedTheme.colors || chatThemeId === 'none')
+    ? { bg: theme.colors.secondaryBackground, pattern: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(210,180,140,0.15)' }
+    : (isDark ? selectedTheme.colors.dark : selectedTheme.colors.light);
 
   return (
     <KeyboardAvoidingView

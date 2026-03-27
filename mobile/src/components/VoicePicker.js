@@ -45,10 +45,24 @@ const VoicePicker = forwardRef(({ onVoiceSelected, onCancel }, ref) => {
       streamRef.current = stream;
       setShowRecordingModal(true);
 
+      // Определяем поддерживаемый формат
+      let mimeType = 'audio/webm;codecs=opus';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'audio/webm';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          mimeType = 'audio/mp4';
+          if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = ''; // используем формат по умолчанию
+          }
+        }
+      }
+
+      console.log('🎙️ Используемый формат аудио:', mimeType || 'default');
+
       // Создаем MediaRecorder
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
-      });
+      const mediaRecorder = mimeType 
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
 
       chunksRef.current = [];
 
@@ -85,8 +99,24 @@ const VoicePicker = forwardRef(({ onVoiceSelected, onCancel }, ref) => {
       };
 
       mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start();
-      setIsRecording(true);
+      
+      try {
+        console.log('▶️ Запуск MediaRecorder...');
+        mediaRecorder.start();
+        setIsRecording(true);
+        console.log('✅ MediaRecorder запущен, состояние:', mediaRecorder.state);
+      } catch (startError) {
+        console.error('❌ Ошибка запуска MediaRecorder:', startError);
+        Alert.alert('Ошибка', 'Не удалось начать запись: ' + startError.message);
+        
+        // Останавливаем поток
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+          streamRef.current = null;
+        }
+        setShowRecordingModal(false);
+        return;
+      }
 
       // Таймер
       timerRef.current = setInterval(() => {
@@ -103,8 +133,26 @@ const VoicePicker = forwardRef(({ onVoiceSelected, onCancel }, ref) => {
       }, 1000);
 
     } catch (error) {
-      console.error('Ошибка доступа к микрофону:', error);
-      Alert.alert('Ошибка', 'Не удалось получить доступ к микрофону');
+      console.error('❌ Ошибка доступа к микрофону:', error);
+      
+      // Закрываем модалку если она была открыта
+      setShowRecordingModal(false);
+      setIsRecording(false);
+      
+      // Останавливаем поток если он был создан
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+      
+      let errorMessage = 'Не удалось получить доступ к микрофону';
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        errorMessage = 'Доступ к микрофону запрещен. Разрешите доступ в настройках браузера.';
+      } else if (error.name === 'NotFoundError') {
+        errorMessage = 'Микрофон не найден';
+      }
+      
+      Alert.alert('Ошибка', errorMessage);
     }
   };
 

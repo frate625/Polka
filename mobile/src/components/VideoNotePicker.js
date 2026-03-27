@@ -79,10 +79,27 @@ const VideoNotePicker = forwardRef(({ onVideoNoteSelected, onCancel }, ref) => {
         }
       }, 100);
 
+      // Определяем поддерживаемый формат видео
+      let mimeType = 'video/webm;codecs=vp9,opus';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'video/webm;codecs=vp8,opus';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          mimeType = 'video/webm';
+          if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = 'video/mp4';
+            if (!MediaRecorder.isTypeSupported(mimeType)) {
+              mimeType = ''; // используем формат по умолчанию
+            }
+          }
+        }
+      }
+
+      console.log('📹 Используемый формат видео:', mimeType || 'default');
+
       // Создаем MediaRecorder
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm;codecs=vp9'
-      });
+      const mediaRecorder = mimeType 
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
 
       chunksRef.current = [];
 
@@ -131,8 +148,34 @@ const VideoNotePicker = forwardRef(({ onVideoNoteSelected, onCancel }, ref) => {
       };
 
       mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start();
-      setIsRecording(true);
+      
+      try {
+        console.log('▶️ Запуск VideoRecorder...');
+        mediaRecorder.start();
+        setIsRecording(true);
+        console.log('✅ VideoRecorder запущен, состояние:', mediaRecorder.state);
+      } catch (startError) {
+        console.error('❌ Ошибка запуска VideoRecorder:', startError);
+        Alert.alert('Ошибка', 'Не удалось начать запись видео: ' + startError.message);
+        
+        // Останавливаем поток
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+          streamRef.current = null;
+        }
+        
+        // Очищаем видео
+        if (videoRef.current) {
+          videoRef.current.srcObject = null;
+          videoRef.current = null;
+        }
+        if (videoContainerRef.current) {
+          videoContainerRef.current.innerHTML = '';
+        }
+        
+        setShowRecordingModal(false);
+        return;
+      }
 
       // Таймер
       timerRef.current = setInterval(() => {
@@ -149,8 +192,37 @@ const VideoNotePicker = forwardRef(({ onVideoNoteSelected, onCancel }, ref) => {
       }, 1000);
 
     } catch (error) {
-      console.error('Ошибка доступа к камере:', error);
-      Alert.alert('Ошибка', 'Не удалось получить доступ к камере');
+      console.error('❌ Ошибка доступа к камере:', error);
+      
+      // Закрываем модалку если она была открыта
+      setShowRecordingModal(false);
+      setIsRecording(false);
+      
+      // Останавливаем поток если он был создан
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+      
+      // Очищаем видео элементы
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+        videoRef.current = null;
+      }
+      if (videoContainerRef.current) {
+        videoContainerRef.current.innerHTML = '';
+      }
+      
+      let errorMessage = 'Не удалось получить доступ к камере';
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        errorMessage = 'Доступ к камере запрещен. Разрешите доступ в настройках браузера.';
+      } else if (error.name === 'NotFoundError') {
+        errorMessage = 'Камера не найдена';
+      } else if (error.name === 'NotReadableError') {
+        errorMessage = 'Камера используется другим приложением';
+      }
+      
+      Alert.alert('Ошибка', errorMessage);
     }
   };
 

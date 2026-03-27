@@ -603,6 +603,9 @@ export default function ChatScreen() {
     ? { bg: theme.colors.secondaryBackground, pattern: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(210,180,140,0.15)' }
     : (isDark ? selectedTheme.colors.dark : selectedTheme.colors.light);
 
+  // Цвет границ - чуть темнее фона для темной темы
+  const borderColor = isDark ? 'rgba(0,0,0,0.3)' : theme.colors.border;
+
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: chatThemeColors.bg }]}
@@ -656,7 +659,7 @@ export default function ChatScreen() {
           </TouchableOpacity>
         </View>
       )}
-      <View style={[styles.inputContainer, { backgroundColor: theme.colors.background, borderTopColor: theme.colors.border }]}>
+      <View style={[styles.inputContainer, { backgroundColor: theme.colors.background, borderTopColor: borderColor }]}>
         <MediaPicker onMediaSelected={handleMediaSelected} />
         <TextInput
           style={[styles.input, { backgroundColor: theme.colors.inputBackground, color: theme.colors.text }]}

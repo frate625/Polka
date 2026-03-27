@@ -3,6 +3,7 @@ import React from 'react';
 import { Image } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
+import { useTheme } from '../store/ThemeContext';
 
 import ChatsListScreen from '../screens/ChatsListScreen';
 import ChatScreen from '../screens/ChatScreen';
@@ -20,8 +21,19 @@ const Stack = createStackNavigator();
 
 // Стек для чатов
 function ChatsStack() {
+  const { theme } = useTheme();
+  const isDark = theme.name === 'dark';
+  const headerBg = isDark ? '#1a1a1a' : '#ffffff';
+  
   return (
-    <Stack.Navigator>
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: headerBg
+        },
+        headerTintColor: theme.colors.text
+      }}
+    >
       <Stack.Screen
         name="ChatsList"
         component={ChatsListScreen}
@@ -73,8 +85,19 @@ function ChatsStack() {
 
 // Стек для профиля
 function ProfileStack() {
+  const { theme } = useTheme();
+  const isDark = theme.name === 'dark';
+  const headerBg = isDark ? '#1a1a1a' : '#ffffff';
+  
   return (
-    <Stack.Navigator>
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: headerBg
+        },
+        headerTintColor: theme.colors.text
+      }}
+    >
       <Stack.Screen
         name="ProfileMain"
         component={ProfileScreen}
@@ -86,8 +109,22 @@ function ProfileStack() {
 
 // Главный таб навигатор
 export default function MainNavigator() {
+  const { theme } = useTheme();
+  const isDark = theme.name === 'dark';
+  const tabBarBg = isDark ? '#1a1a1a' : '#ffffff';
+  
   return (
-    <Tab.Navigator screenOptions={{ headerShown: false }}>
+    <Tab.Navigator 
+      screenOptions={{ 
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: tabBarBg,
+          borderTopColor: isDark ? 'rgba(255,255,255,0.1)' : '#e0e0e0'
+        },
+        tabBarActiveTintColor: theme.colors.primary,
+        tabBarInactiveTintColor: theme.colors.secondaryText
+      }}
+    >
       <Tab.Screen
         name="Chats"
         component={ChatsStack}

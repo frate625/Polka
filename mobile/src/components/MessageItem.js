@@ -290,13 +290,13 @@ export default function MessageItem({ message, isOwnMessage, onLongPress }) {
 
   return (
     <View style={[styles.messageRow, isOwnMessage && styles.ownMessageRow]}>
-      {!isOwnMessage && message.sender && (
+      {!isOwnMessage && (
         <View style={styles.avatarContainer}>
-          {message.sender.avatar_url ? (
+          {message.sender?.avatar_url ? (
             <Image source={{ uri: message.sender.avatar_url }} style={styles.avatar} />
           ) : (
             <View style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarText}>{message.sender.username?.[0]?.toUpperCase() || 'U'}</Text>
+              <Text style={styles.avatarText}>{message.sender?.username?.[0]?.toUpperCase() || 'U'}</Text>
             </View>
           )}
         </View>
@@ -305,7 +305,7 @@ export default function MessageItem({ message, isOwnMessage, onLongPress }) {
         activeOpacity={0.8}
         onLongPress={() => onLongPress && onLongPress(message)}
         delayLongPress={500}
-        style={{ flex: 1 }}
+        style={styles.messageContent}
       >
         <View style={[styles.container, isOwnMessage && styles.ownMessage]}>
           {!isOwnMessage && message.sender && (
@@ -397,8 +397,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600'
   },
+  messageContent: {
+    maxWidth: '75%'
+  },
   container: {
-    maxWidth: '80%'
+    width: '100%'
   },
   ownMessage: {
     alignSelf: 'flex-end'

@@ -83,8 +83,8 @@ export default function RecordButton({ onVoiceSelected, onVideoNoteSelected }) {
       >
         <Image 
           source={mode === 'video_note' 
-            ? require('../../assets/icons/video-note.png')
-            : require('../../assets/icons/instagram.png')
+            ? require('../../assets/icons/microphone.png')
+            : require('../../assets/icons/video-message.png')
           }
           style={{ width: 28, height: 28 }}
           resizeMode="contain"

@@ -35,7 +35,7 @@ export default function ChatsListScreen() {
           onPress={() => navigation.navigate('Search')}
         >
           <Image 
-            source={require('../../assets/icons/search-alt.png')} 
+            source={require('../../assets/icons/search.png')} 
             style={{ width: 22, height: 22 }}
             resizeMode="contain"
           />

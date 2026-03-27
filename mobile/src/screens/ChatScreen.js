@@ -154,7 +154,7 @@ export default function ChatScreen() {
                 onPress={() => makeCall(chatId, recipientId, true)}
               >
                 <Image 
-                  source={require('../../assets/icons/video-call-alt.png')} 
+                  source={require('../../assets/icons/video_call.png')} 
                   style={{ width: 22, height: 22 }}
                   resizeMode="contain"
                 />

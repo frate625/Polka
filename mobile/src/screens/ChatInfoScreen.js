@@ -499,12 +499,12 @@ export default function ChatInfoScreen() {
           <Text style={[styles.sectionArrow, { color: theme.colors.secondaryText }]}>›</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.sectionItem, { borderBottomColor: theme.colors.border }]} onPress={() => setActiveTab('video_notes')}>
-          <Image source={require('../../assets/icons/video-note.png')} style={styles.sectionIconImage} resizeMode="contain" />
+          <Image source={require('../../assets/icons/video-message.png')} style={styles.sectionIconImage} resizeMode="contain" />
           <Text style={[styles.sectionText, { color: theme.colors.text }]}>Видео</Text>
           <Text style={[styles.sectionArrow, { color: theme.colors.secondaryText }]}>›</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.sectionItem, { borderBottomWidth: 0 }]} onPress={() => setActiveTab('voice')}>
-          <Image source={require('../../assets/icons/microphone-alt.png')} style={styles.sectionIconImage} resizeMode="contain" />
+          <Image source={require('../../assets/icons/microphone.png')} style={styles.sectionIconImage} resizeMode="contain" />
           <Text style={[styles.sectionText, { color: theme.colors.text }]}>Аудиозаписи</Text>
           <Text style={[styles.sectionArrow, { color: theme.colors.secondaryText }]}>›</Text>
         </TouchableOpacity>

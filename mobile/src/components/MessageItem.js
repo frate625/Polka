@@ -304,12 +304,27 @@ export default function MessageItem({ message, isOwnMessage, onLongPress }) {
               }}
             />
             {showPlayButton && (
-              <TouchableOpacity 
-                style={styles.videoPlayButton}
-                onPress={handleVideoClick}
-              >
-                <Text style={styles.videoPlayIcon}>▶️</Text>
-              </TouchableOpacity>
+              <View style={styles.videoControls}>
+                <TouchableOpacity 
+                  style={styles.videoPlayButton}
+                  onPress={handleVideoClick}
+                >
+                  <Text style={styles.videoPlayIcon}>▶️</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.videoOpenButton}
+                  onPress={() => {
+                    console.log('🌐 Opening video in new window:', videoNoteUrl);
+                    if (Platform.OS === 'web') {
+                      window.open(videoNoteUrl, '_blank');
+                    } else {
+                      Linking.openURL(videoNoteUrl);
+                    }
+                  }}
+                >
+                  <Text style={styles.videoOpenIcon}>🔗</Text>
+                </TouchableOpacity>
+              </View>
             )}
           </View>
         );
@@ -682,22 +697,39 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     position: 'relative'
   },
-  videoPlayButton: {
+  videoControls: {
     position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: [{ translateX: -30 }, { translateY: -30 }],
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10
   },
+  videoPlayButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10
+  },
   videoPlayIcon: {
     fontSize: 30,
     color: '#fff'
+  },
+  videoOpenButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  videoOpenIcon: {
+    fontSize: 20
   },
   videoNotePlaceholder: {
     width: 200,

@@ -7,6 +7,14 @@ const MessageStatus = require('./MessageStatus');
 User.belongsToMany(Chat, { through: ChatMember, foreignKey: 'user_id', as: 'chats' });
 Chat.belongsToMany(User, { through: ChatMember, foreignKey: 'chat_id', as: 'members' });
 
+// Прямые ассоциации для Chat и ChatMember
+Chat.hasMany(ChatMember, { foreignKey: 'chat_id', as: 'chatMembers' });
+ChatMember.belongsTo(Chat, { foreignKey: 'chat_id', as: 'chat' });
+
+// Прямые ассоциации для User и ChatMember
+User.hasMany(ChatMember, { foreignKey: 'user_id', as: 'chatMemberships' });
+ChatMember.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
 Chat.hasMany(Message, { foreignKey: 'chat_id', as: 'messages' });
 Message.belongsTo(Chat, { foreignKey: 'chat_id', as: 'chat' });
 
@@ -21,9 +29,6 @@ MessageStatus.belongsTo(Message, { foreignKey: 'message_id', as: 'message' });
 
 User.hasMany(MessageStatus, { foreignKey: 'user_id', as: 'messageStatuses' });
 MessageStatus.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
-
-ChatMember.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
-ChatMember.belongsTo(Chat, { foreignKey: 'chat_id', as: 'chat' });
 
 module.exports = {
   User,

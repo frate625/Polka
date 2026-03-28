@@ -585,6 +585,74 @@ export default function ChatInfoScreen() {
         </View>
       )}
 
+      {/* Участники группы */}
+      {chatInfo?.type === 'group' && chatInfo?.members && chatInfo.members.length > 0 && (
+        <View style={[styles.section, { backgroundColor: theme.colors.card, marginTop: 12 }]}>
+          <View style={[styles.sectionHeader, { backgroundColor: theme.colors.background }]}>
+            <Text style={[styles.sectionHeaderText, { color: theme.colors.secondaryText }]}>
+              Участники ({chatInfo.members.length})
+            </Text>
+            {chatInfo.owner_id === user?.id && (
+              <TouchableOpacity
+                onPress={() => navigation.navigate('GroupManage', {
+                  chatId,
+                  currentMembers: chatInfo.members || []
+                })}
+              >
+                <Text style={[styles.manageLinkText, { color: theme.colors.primary }]}>Управление</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          {chatInfo.members.slice(0, 5).map((member, index) => (
+            <View 
+              key={member.id} 
+              style={[
+                styles.memberItem, 
+                { borderBottomColor: theme.colors.border },
+                index === Math.min(4, chatInfo.members.length - 1) && { borderBottomWidth: 0 }
+              ]}
+            >
+              {member.avatar_url ? (
+                <Image source={{ uri: member.avatar_url }} style={styles.memberAvatar} />
+              ) : (
+                <View style={[styles.memberAvatarPlaceholder, { backgroundColor: theme.colors.primary }]}>
+                  <Text style={styles.memberAvatarText}>{member.username?.[0]?.toUpperCase() || 'U'}</Text>
+                </View>
+              )}
+              <View style={styles.memberInfo}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={[styles.memberName, { color: theme.colors.text }]}>{member.username}</Text>
+                  {chatInfo.owner_id === member.id && (
+                    <View style={[styles.ownerBadge, { backgroundColor: theme.colors.primary }]}>
+                      <Text style={styles.ownerBadgeText}>Владелец</Text>
+                    </View>
+                  )}
+                </View>
+                {member.status && (
+                  <Text style={[styles.memberStatus, { color: theme.colors.secondaryText }]} numberOfLines={1}>
+                    {member.status}
+                  </Text>
+                )}
+              </View>
+            </View>
+          ))}
+          {chatInfo.members.length > 5 && (
+            <TouchableOpacity
+              style={[styles.sectionItem, { borderBottomWidth: 0 }]}
+              onPress={() => navigation.navigate('GroupManage', {
+                chatId,
+                currentMembers: chatInfo.members || []
+              })}
+            >
+              <Text style={[styles.sectionText, { color: theme.colors.primary }]}>
+                Показать всех участников ({chatInfo.members.length})
+              </Text>
+              <Text style={[styles.sectionArrow, { color: theme.colors.secondaryText }]}>›</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
       {/* Настройки чата */}
       <View style={[styles.section, { backgroundColor: theme.colors.card, marginTop: 12 }]}>
         <TouchableOpacity 
@@ -867,6 +935,71 @@ const styles = StyleSheet.create({
   searchContent: {
     fontSize: 14,
     lineHeight: 20
+  },
+  // Members
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10
+  },
+  sectionHeaderText: {
+    fontSize: 13,
+    fontWeight: '600',
+    textTransform: 'uppercase'
+  },
+  manageLinkText: {
+    fontSize: 14,
+    fontWeight: '500'
+  },
+  memberItem: {
+    flexDirection: 'row',
+    padding: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    borderBottomWidth: 1
+  },
+  memberAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12
+  },
+  memberAvatarPlaceholder: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  memberAvatarText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600'
+  },
+  memberInfo: {
+    flex: 1
+  },
+  memberName: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 2
+  },
+  memberStatus: {
+    fontSize: 13
+  },
+  ownerBadge: {
+    marginLeft: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4
+  },
+  ownerBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '600'
   },
   // Actions
   actionsContainer: {

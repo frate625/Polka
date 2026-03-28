@@ -7,7 +7,9 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
-  Alert
+  Alert,
+  Platform,
+  ActivityIndicator
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { userAPI, chatAPI } from '../services/api';
@@ -40,22 +42,57 @@ export default function CreateChatScreen() {
 
   // Создание приватного чата с пользователем
   const createPrivateChat = async (userId) => {
+    console.log('🆕 Creating private chat with userId:', userId);
     try {
+      setLoading(true);
       const response = await chatAPI.createChat({
         user_ids: [userId],
         type: 'private'
       });
 
+      console.log('✅ Chat created:', response.data);
+
       if (response.data.chat) {
-        navigation.navigate('Chat', {
+        const user = searchResults.find(u => u.id === userId);
+        const chatName = user?.username || 'Чат';
+        
+        console.log('📱 Navigating to chat:', {
           chatId: response.data.chat.id,
-          chatName: response.data.chat.members?.find(m => m.id === userId)?.username || 'Чат',
+          chatName,
           chatType: 'private'
         });
+        
+        navigation.navigate('Chat', {
+          chatId: response.data.chat.id,
+          chatName,
+          chatType: 'private',
+          chatMembers: response.data.chat.members
+        });
+      } else {
+        console.error('❌ No chat in response');
+        const errorMsg = 'Не удалось создать чат: нет данных';
+        if (Platform.OS === 'web') {
+          alert(errorMsg);
+        } else {
+          Alert.alert('Ошибка', errorMsg);
+        }
       }
     } catch (error) {
-      console.error('Ошибка создания чата:', error);
-      Alert.alert('Ошибка', 'Не удалось создать чат');
+      console.error('❌ Ошибка создания чата:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      
+      const errorMsg = error.response?.data?.error || 'Не удалось создать чат';
+      if (Platform.OS === 'web') {
+        alert('Ошибка: ' + errorMsg);
+      } else {
+        Alert.alert('Ошибка', errorMsg);
+      }
+    } finally {
+      setLoading(false);
     }
   };
 

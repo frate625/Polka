@@ -7,7 +7,8 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
-  Alert
+  Alert,
+  Platform
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { userAPI, chatAPI } from '../services/api';
@@ -72,10 +73,18 @@ export default function GroupManageScreen() {
       setSearchResults(prev => prev.filter(u => u.id !== user.id));
       setSearchQuery('');
       
-      Alert.alert('Успех', `${user.username} добавлен в группу`);
+      if (Platform.OS === 'web') {
+        alert(`${user.username} добавлен в группу`);
+      } else {
+        Alert.alert('Успех', `${user.username} добавлен в группу`);
+      }
     } catch (error) {
       console.error('Ошибка добавления участника:', error);
-      Alert.alert('Ошибка', 'Не удалось добавить участника');
+      if (Platform.OS === 'web') {
+        alert('Ошибка: Не удалось добавить участника');
+      } else {
+        Alert.alert('Ошибка', 'Не удалось добавить участника');
+      }
     } finally {
       setLoading(false);
     }
@@ -83,32 +92,48 @@ export default function GroupManageScreen() {
 
   // Удаление участника
   const removeMember = async (user) => {
-    Alert.alert(
-      'Удалить участника',
-      `Удалить ${user.username} из группы?`,
-      [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: 'Удалить',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setLoading(true);
-              await chatAPI.removeMember(chatId, user.id);
-              
-              setMembers(prev => prev.filter(m => m.id !== user.id));
-              
-              Alert.alert('Успех', `${user.username} удален из группы`);
-            } catch (error) {
-              console.error('Ошибка удаления участника:', error);
-              Alert.alert('Ошибка', 'Не удалось удалить участника');
-            } finally {
-              setLoading(false);
-            }
-          }
+    const performRemove = async () => {
+      try {
+        setLoading(true);
+        await chatAPI.removeMember(chatId, user.id);
+        
+        setMembers(prev => prev.filter(m => m.id !== user.id));
+        
+        if (Platform.OS === 'web') {
+          alert(`${user.username} удален из группы`);
+        } else {
+          Alert.alert('Успех', `${user.username} удален из группы`);
         }
-      ]
-    );
+      } catch (error) {
+        console.error('Ошибка удаления участника:', error);
+        if (Platform.OS === 'web') {
+          alert('Ошибка: Не удалось удалить участника');
+        } else {
+          Alert.alert('Ошибка', 'Не удалось удалить участника');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Удалить ${user.username} из группы?`)) {
+        await performRemove();
+      }
+    } else {
+      Alert.alert(
+        'Удалить участника',
+        `Удалить ${user.username} из группы?`,
+        [
+          { text: 'Отмена', style: 'cancel' },
+          {
+            text: 'Удалить',
+            style: 'destructive',
+            onPress: performRemove
+          }
+        ]
+      );
+    }
   };
 
   // Рендер участника группы

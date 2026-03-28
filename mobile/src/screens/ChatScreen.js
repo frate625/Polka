@@ -192,7 +192,7 @@ export default function ChatScreen() {
             >
               <Image 
                 source={require('../../assets/icons/settings.png')} 
-                style={{ width: 22, height: 22 }}
+                style={{ width: 22, height: 22, tintColor: theme.colors.text }}
                 resizeMode="contain"
               />
             </TouchableOpacity>

@@ -85,11 +85,24 @@ export default function CreateChatScreen() {
         status: error.response?.status
       });
       
-      const errorMsg = error.response?.data?.error || 'Не удалось создать чат';
+      let errorMsg = 'Не удалось создать чат';
+      if (error.response?.data?.error) {
+        errorMsg = error.response.data.error;
+      } else if (error.message) {
+        errorMsg = error.message;
+      }
+      
+      // Добавляем статус код если есть
+      if (error.response?.status) {
+        errorMsg += ` (${error.response.status})`;
+      }
+      
+      console.error('📱 Showing error to user:', errorMsg);
+      
       if (Platform.OS === 'web') {
-        alert('Ошибка: ' + errorMsg);
+        alert('Ошибка создания чата: ' + errorMsg);
       } else {
-        Alert.alert('Ошибка', errorMsg);
+        Alert.alert('Ошибка создания чата', errorMsg);
       }
     } finally {
       setLoading(false);

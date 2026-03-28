@@ -186,11 +186,18 @@ export default function MessageItem({ message, isOwnMessage, onLongPress }) {
           );
         }
         
-        const videoNoteUrl = normalizeUrl(
-          message.file_url.startsWith('http') 
-            ? message.file_url 
-            : `${getBaseUrl()}${message.file_url}`
-        );
+        // Формируем правильный URL для видео
+        let videoNoteUrl;
+        if (message.file_url.startsWith('http')) {
+          // Уже полный URL
+          videoNoteUrl = normalizeUrl(message.file_url);
+        } else if (message.file_url.startsWith('/uploads/')) {
+          // Относительный путь от backend - добавляем Railway URL
+          videoNoteUrl = `https://polka-production.up.railway.app${message.file_url}`;
+        } else {
+          // Другой случай - используем как есть с базовым URL
+          videoNoteUrl = normalizeUrl(`${getBaseUrl()}${message.file_url}`);
+        }
         
         console.log('🎥 Video note URL:', videoNoteUrl);
         console.log('🎥 Message file_url:', message.file_url);
@@ -304,27 +311,12 @@ export default function MessageItem({ message, isOwnMessage, onLongPress }) {
               }}
             />
             {showPlayButton && (
-              <View style={styles.videoControls}>
-                <TouchableOpacity 
-                  style={styles.videoPlayButton}
-                  onPress={handleVideoClick}
-                >
-                  <Text style={styles.videoPlayIcon}>▶️</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.videoOpenButton}
-                  onPress={() => {
-                    console.log('🌐 Opening video in new window:', videoNoteUrl);
-                    if (Platform.OS === 'web') {
-                      window.open(videoNoteUrl, '_blank');
-                    } else {
-                      Linking.openURL(videoNoteUrl);
-                    }
-                  }}
-                >
-                  <Text style={styles.videoOpenIcon}>🔗</Text>
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity 
+                style={styles.videoPlayButton}
+                onPress={handleVideoClick}
+              >
+                <Text style={styles.videoPlayIcon}>▶️</Text>
+              </TouchableOpacity>
             )}
           </View>
         );
@@ -697,39 +689,22 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     position: 'relative'
   },
-  videoControls: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10
-  },
   videoPlayButton: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -30 }, { translateY: -30 }],
     width: 60,
     height: 60,
     borderRadius: 30,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10
+    zIndex: 10
   },
   videoPlayIcon: {
     fontSize: 30,
     color: '#fff'
-  },
-  videoOpenButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  videoOpenIcon: {
-    fontSize: 20
   },
   videoNotePlaceholder: {
     width: 200,

@@ -86,7 +86,11 @@ export default function CreateChatScreen() {
       });
       
       let errorMsg = 'Не удалось создать чат';
-      if (error.response?.data?.error) {
+      
+      // Пытаемся получить подробности об ошибке
+      if (error.response?.data?.details) {
+        errorMsg = error.response.data.details;
+      } else if (error.response?.data?.error) {
         errorMsg = error.response.data.error;
       } else if (error.message) {
         errorMsg = error.message;
@@ -94,13 +98,13 @@ export default function CreateChatScreen() {
       
       // Добавляем статус код если есть
       if (error.response?.status) {
-        errorMsg += ` (${error.response.status})`;
+        errorMsg += ` (код: ${error.response.status})`;
       }
       
       console.error('📱 Showing error to user:', errorMsg);
       
       if (Platform.OS === 'web') {
-        alert('Ошибка создания чата: ' + errorMsg);
+        alert('Ошибка создания чата:\n' + errorMsg);
       } else {
         Alert.alert('Ошибка создания чата', errorMsg);
       }

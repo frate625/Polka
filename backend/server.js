@@ -42,7 +42,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Статическая раздача загруженных файлов
-app.use('/uploads', express.static('uploads'));
+const path = require('path');
+const uploadsPath = path.join(__dirname, 'uploads');
+console.log('📂 Uploads folder path:', uploadsPath);
+
+// Логирование запросов к файлам для отладки
+app.use('/uploads', (req, res, next) => {
+  console.log('📥 File request:', req.path);
+  next();
+}, express.static(uploadsPath));
 
 app.get('/', (req, res) => {
   res.json({ message: 'Polka Messenger API Server', version: '1.0.0' });

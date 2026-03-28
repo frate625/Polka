@@ -55,17 +55,26 @@ const getUserChats = async (req, res) => {
 
 const createChat = async (req, res) => {
   try {
+    console.log('🆕 Create chat request:', {
+      userId: req.userId,
+      body: req.body
+    });
+
     const { user_ids, name, type } = req.body;
 
     if (!user_ids || user_ids.length === 0) {
+      console.log('❌ No user_ids provided');
       return res.status(400).json({ error: 'User IDs are required' });
     }
 
     if (type === 'private' && user_ids.length !== 1) {
+      console.log('❌ Private chat must have exactly 1 user_id, got:', user_ids.length);
       return res.status(400).json({ error: 'Private chat requires exactly one other user' });
     }
 
     if (type === 'private') {
+      console.log('🔍 Checking for existing private chat between:', req.userId, 'and', user_ids[0]);
+      
       // Проверяем существующий приватный чат между этими двумя пользователями
       const existingChats = await Chat.findAll({
         where: { type: 'private' },
@@ -79,6 +88,8 @@ const createChat = async (req, res) => {
         }]
       });
 
+      console.log('📊 Found existing chats:', existingChats.length);
+
       // Находим чат где участвуют оба пользователя
       const existingChat = existingChats.find(chat => {
         const memberUserIds = chat.chatMembers.map(m => m.user_id);
@@ -86,12 +97,15 @@ const createChat = async (req, res) => {
       });
 
       if (existingChat) {
+        console.log('✅ Found existing chat:', existingChat.id);
+        
         // Если чат был скрыт у текущего пользователя, делаем его видимым
         const myMember = await ChatMember.findOne({
           where: { chat_id: existingChat.id, user_id: req.userId }
         });
 
         if (myMember && myMember.is_hidden) {
+          console.log('👁️ Unhiding chat for user');
           await myMember.update({ is_hidden: false });
         }
 
@@ -104,17 +118,24 @@ const createChat = async (req, res) => {
           }]
         });
 
+        console.log('📤 Returning existing chat');
         return res.json({ chat: fullChat });
       }
     }
 
+    console.log('🆕 Creating new chat:', { name, type });
+    
     const chat = await Chat.create({
       name: type === 'group' ? name : null,
       type: type || 'private',
       owner_id: type === 'group' ? req.userId : null
     });
 
+    console.log('✅ Chat created with ID:', chat.id);
+
     const members = [req.userId, ...user_ids];
+    console.log('👥 Adding members:', members);
+    
     const chatMembers = members.map((userId, index) => ({
       chat_id: chat.id,
       user_id: userId,
@@ -122,6 +143,7 @@ const createChat = async (req, res) => {
     }));
 
     await ChatMember.bulkCreate(chatMembers);
+    console.log('✅ ChatMembers created');
 
     const fullChat = await Chat.findByPk(chat.id, {
       include: [{
@@ -131,13 +153,23 @@ const createChat = async (req, res) => {
       }]
     });
 
+    console.log('✅ Returning new chat with', fullChat.members?.length, 'members');
+
     res.status(201).json({
       message: 'Chat created successfully',
       chat: fullChat
     });
   } catch (error) {
-    console.error('Create chat error:', error);
-    res.status(500).json({ error: 'Failed to create chat' });
+    console.error('❌ Create chat error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    res.status(500).json({ 
+      error: 'Failed to create chat',
+      details: error.message 
+    });
   }
 };
 

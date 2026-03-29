@@ -202,9 +202,15 @@ export default function MessageItem({ message, isOwnMessage, onLongPress }) {
         console.log('🎥 Video note URL:', videoNoteUrl);
         console.log('🎥 Message file_url:', message.file_url);
         
+        // Определяем iOS
+        const isIOS = Platform.OS === 'web' && /iPad|iPhone|iPod/.test(navigator.userAgent);
+        
         const handleVideoClick = (e) => {
-          e.preventDefault();
-          e.stopPropagation();
+          if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+          
           const video = videoRef.current;
           if (!video) {
             console.log('❌ Video ref not found');
@@ -235,22 +241,39 @@ export default function MessageItem({ message, isOwnMessage, onLongPress }) {
             <video
               ref={(el) => { videoRef.current = el; }}
               src={videoNoteUrl}
-              autoPlay={true}
-              loop={true}
+              autoPlay={!isIOS}
+              loop={!isIOS}
               muted={true}
               playsInline={true}
               controls={false}
-              preload="metadata"
+              preload="auto"
               onClick={handleVideoClick}
+              onTouchEnd={(e) => {
+                if (isIOS) {
+                  handleVideoClick(e);
+                }
+              }}
               onLoadStart={() => {
-                console.log('📥 Video load start');
+                console.log('📥 Video load start, URL:', videoNoteUrl);
               }}
               onLoadedMetadata={(e) => {
                 const video = e.target;
                 console.log('📊 Video metadata loaded - duration:', video.duration, 'videoWidth:', video.videoWidth, 'videoHeight:', video.videoHeight);
+                
+                // На iOS сразу показываем кнопку play
+                if (isIOS) {
+                  setShowPlayButton(true);
+                }
               }}
               onCanPlay={() => {
                 console.log('✅ Video can play');
+                
+                // На iOS не пытаемся автоплей
+                if (isIOS) {
+                  setShowPlayButton(true);
+                  return;
+                }
+                
                 const video = videoRef.current;
                 if (video && video.paused) {
                   video.play().catch(err => {
@@ -265,15 +288,19 @@ export default function MessageItem({ message, isOwnMessage, onLongPress }) {
               }}
               onPause={() => {
                 console.log('⏸️ Video paused');
-                const video = videoRef.current;
-                if (video && !video.ended) {
-                  setShowPlayButton(true);
-                }
               }}
               onEnded={(e) => {
                 console.log('🏁 Video ended');
                 const video = e.target;
-                // После окончания возвращаем зацикливание и без звука
+                
+                // На iOS не зацикливаем, просто показываем кнопку
+                if (isIOS) {
+                  video.currentTime = 0;
+                  setShowPlayButton(true);
+                  return;
+                }
+                
+                // На десктопе зацикливаем
                 video.loop = true;
                 video.muted = true;
                 video.currentTime = 0;
@@ -290,7 +317,9 @@ export default function MessageItem({ message, isOwnMessage, onLongPress }) {
                   message: video.error?.message,
                   networkState: video.networkState,
                   readyState: video.readyState,
-                  src: video.src
+                  src: video.src,
+                  canPlayType_webm: video.canPlayType('video/webm'),
+                  canPlayType_mp4: video.canPlayType('video/mp4')
                 });
                 setShowPlayButton(true);
               }}

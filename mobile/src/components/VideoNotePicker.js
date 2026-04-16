@@ -79,22 +79,38 @@ const VideoNotePicker = forwardRef(({ onVideoNoteSelected, onCancel }, ref) => {
         }
       }, 100);
 
-      // Определяем поддерживаемый формат видео
-      let mimeType = 'video/webm;codecs=vp9,opus';
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = 'video/webm;codecs=vp8,opus';
-        if (!MediaRecorder.isTypeSupported(mimeType)) {
-          mimeType = 'video/webm';
-          if (!MediaRecorder.isTypeSupported(mimeType)) {
-            mimeType = 'video/mp4';
-            if (!MediaRecorder.isTypeSupported(mimeType)) {
-              mimeType = ''; // используем формат по умолчанию
-            }
+      // Формат записи: на мобильных сначала VP8 (лучше крутится в WebView/«телефонном» Chrome),
+      // на десктопе — VP9 для качества.
+      const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+      const isMobileBrowser = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+
+      const pickMimeType = () => {
+        const candidates = isMobileBrowser
+          ? [
+              'video/webm;codecs=vp8,opus',
+              'video/webm;codecs=vp9,opus',
+              'video/webm',
+              'video/mp4',
+              ''
+            ]
+          : [
+              'video/webm;codecs=vp9,opus',
+              'video/webm;codecs=vp8,opus',
+              'video/webm',
+              'video/mp4',
+              ''
+            ];
+        for (const c of candidates) {
+          if (c === '' || MediaRecorder.isTypeSupported(c)) {
+            return c;
           }
         }
-      }
+        return '';
+      };
 
-      console.log('📹 Используемый формат видео:', mimeType || 'default');
+      let mimeType = pickMimeType();
+
+      console.log('📹 Используемый формат видео:', mimeType || 'default', isMobileBrowser ? '(mobile)' : '(desktop)');
 
       // Создаем MediaRecorder
       const mediaRecorder = mimeType 
@@ -110,6 +126,8 @@ const VideoNotePicker = forwardRef(({ onVideoNoteSelected, onCancel }, ref) => {
       };
 
       mediaRecorder.onstop = async () => {
+        const usedMime = mediaRecorder.mimeType || mimeType || 'video/webm';
+
         // Останавливаем камеру СРАЗУ
         if (streamRef.current) {
           streamRef.current.getTracks().forEach(track => {
@@ -142,16 +160,18 @@ const VideoNotePicker = forwardRef(({ onVideoNoteSelected, onCancel }, ref) => {
           return;
         }
         
-        // Загружаем только если НЕ отменено
-        const blob = new Blob(chunksRef.current, { type: 'video/webm' });
-        await uploadVideoNote(blob);
+        // Blob и имя файла должны совпадать с реальным кодеком (иначе MP4 внутри .webm ломает плеер на телефоне)
+        const blob = new Blob(chunksRef.current, { type: usedMime });
+        const ext = usedMime.includes('mp4') ? 'mp4' : 'webm';
+        await uploadVideoNote(blob, usedMime, ext);
       };
 
       mediaRecorderRef.current = mediaRecorder;
       
       try {
         console.log('▶️ Запуск VideoRecorder...');
-        mediaRecorder.start();
+        // timeslice: часть Android/WebKit не отдаёт данные в ondataavailable без интервала
+        mediaRecorder.start(250);
         setIsRecording(true);
         console.log('✅ VideoRecorder запущен, состояние:', mediaRecorder.state);
       } catch (startError) {
@@ -281,9 +301,9 @@ const VideoNotePicker = forwardRef(({ onVideoNoteSelected, onCancel }, ref) => {
     }
   };
 
-  const uploadVideoNote = async (blob) => {
+  const uploadVideoNote = async (blob, mimeType = 'video/webm', ext = 'webm') => {
     try {
-      const file = new File([blob], `video_note_${Date.now()}.webm`, { type: 'video/webm' });
+      const file = new File([blob], `video_note_${Date.now()}.${ext}`, { type: mimeType });
       
       console.log('📤 Загрузка кружочка...', file.name);
       const response = await uploadAPI.uploadWebFile(file);

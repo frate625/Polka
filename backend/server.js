@@ -13,8 +13,10 @@ const messageRoutes = require('./src/routes/messageRoutes');
 const uploadRoutes = require('./src/routes/uploadRoutes');
 
 const chatSocket = require('./src/socket/chatSocket');
+const { UPLOADS_DIR, ensureUploadsDir } = require('./src/config/uploads');
 
 const app = express();
+app.set('trust proxy', 1);
 const server = http.createServer(app);
 const allowedOrigins = [
   'http://localhost:19006',
@@ -41,16 +43,29 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Статическая раздача загруженных файлов
-const path = require('path');
-const uploadsPath = path.join(__dirname, 'uploads');
+// Статическая раздача загруженных файлов (тот же каталог, что и multer — в т.ч. Railway volume)
+ensureUploadsDir();
+const uploadsPath = UPLOADS_DIR;
 console.log('📂 Uploads folder path:', uploadsPath);
 
-// Логирование запросов к файлам для отладки
+// Статика uploads: корректный MIME + CORS (видео с домена Vercel грузит другой origin)
+const uploadsStatic = express.static(uploadsPath, {
+  setHeaders: (res, filePath) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    if (filePath.endsWith('.webm')) {
+      res.setHeader('Content-Type', 'video/webm');
+    } else if (filePath.endsWith('.mp4')) {
+      res.setHeader('Content-Type', 'video/mp4');
+    } else if (filePath.endsWith('.ogg') || filePath.endsWith('.oga')) {
+      res.setHeader('Content-Type', 'audio/ogg');
+    }
+  }
+});
+
 app.use('/uploads', (req, res, next) => {
   console.log('📥 File request:', req.path);
   next();
-}, express.static(uploadsPath));
+}, uploadsStatic);
 
 app.get('/', (req, res) => {
   res.json({ message: 'Polka Messenger API Server', version: '1.0.0' });

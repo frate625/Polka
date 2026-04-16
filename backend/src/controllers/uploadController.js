@@ -1,10 +1,17 @@
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
-const cloudinary = require('../config/cloudinary');
+const { UPLOADS_DIR, getPublicFileUrl } = require('../config/uploads');
 
-// Используем память для временного хранения (не диск)
-const storage = multer.memoryStorage();
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, UPLOADS_DIR);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname || '') || '';
+    const name = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+    cb(null, name);
+  }
+});
 
 const upload = multer({
   storage,
@@ -19,54 +26,25 @@ const uploadFile = async (req, res) => {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    console.log('📤 Uploading file to Cloudinary:', req.file.originalname);
+    console.log('📤 File saved to disk:', req.file.filename, '→', UPLOADS_DIR);
 
-    // Определяем resource_type по расширению
-    const ext = path.extname(req.file.originalname).toLowerCase();
-    let resourceType = 'auto';
-    if (['.mp4', '.webm', '.avi', '.mov'].includes(ext)) {
-      resourceType = 'video';
-    } else if (['.mp3', '.wav', '.ogg', '.webm'].includes(ext)) {
-      resourceType = 'video'; // Cloudinary хранит аудио как video
-    }
-
-    // Загружаем в Cloudinary из буфера
-    const uploadResult = await new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          resource_type: resourceType,
-          folder: 'polka-uploads',
-          public_id: `${Date.now()}-${Math.round(Math.random() * 1E9)}`
-        },
-        (error, result) => {
-          if (error) {
-            console.error('❌ Cloudinary upload error:', error);
-            reject(error);
-          } else {
-            console.log('✅ Cloudinary upload success:', result.secure_url);
-            resolve(result);
-          }
-        }
-      );
-      
-      uploadStream.end(req.file.buffer);
-    });
+    const url = getPublicFileUrl(req, req.file.filename);
 
     res.json({
       message: 'File uploaded successfully',
       file: {
-        url: uploadResult.secure_url,
-        public_id: uploadResult.public_id,
-        format: uploadResult.format,
-        size: uploadResult.bytes,
+        url,
+        public_id: req.file.filename,
+        format: path.extname(req.file.filename).replace(/^\./, '') || null,
+        size: req.file.size,
         original_name: req.file.originalname
       }
     });
   } catch (error) {
     console.error('❌ Upload error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to upload file',
-      details: error.message 
+      details: error.message
     });
   }
 };

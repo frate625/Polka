@@ -12,6 +12,7 @@ export function resolveVideoNoteSourceUrl(fileUrl) {
     }
     return u;
   }
+  // Внимание: файлы только под /uploads/ на Railway исчезают после деплоя (эфемерный диск).
   if (u.startsWith('/uploads/')) {
     return `https://polka-production.up.railway.app${u}`;
   }

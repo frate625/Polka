@@ -1,14 +1,15 @@
 // Компонент для отображения одного сообщения в чате
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, Linking, Platform } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import { getBaseUrl } from '../services/api';
 import { getVideoNotePlaybackUrlFromMessage } from '../utils/videoNoteUrl';
 
 /** Кружочек на iOS/Android: HTML video в RN не работает; WebM на iOS не играет — URL с Cloudinary f_mp4. */
-function VideoNoteNative({ uri }) {
+function VideoNoteNative({ uri, isOwnMessage }) {
   const ref = useRef(null);
   const [previewMode, setPreviewMode] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const handlePress = async () => {
     const v = ref.current;
@@ -30,6 +31,11 @@ function VideoNoteNative({ uri }) {
   };
 
   const onPlaybackStatusUpdate = (st) => {
+    if (st.error) {
+      console.warn('Video note load error:', st.error);
+      setLoadError(true);
+      return;
+    }
     if (!st.isLoaded) return;
     // Не полагаемся на previewMode из замыкания — смотрим isLooping из статуса
     if (st.didJustFinish && !st.isLooping) {
@@ -40,6 +46,16 @@ function VideoNoteNative({ uri }) {
       ref.current?.playAsync();
     }
   };
+
+  if (loadError) {
+    return (
+      <View style={[styles.videoNoteContainer, styles.videoNoteErrorBox]}>
+        <Text style={[styles.videoNoteErrorText, isOwnMessage && styles.ownText]}>
+          Видео недоступно (файл не найден или устаревшая ссылка). Запишите кружок заново.
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.videoNoteContainer}>
@@ -63,6 +79,11 @@ export default function MessageItem({ message, isOwnMessage, onLongPress }) {
   const audioRef = useRef(null);
   const videoRef = useRef(null);
   const [showPlayButton, setShowPlayButton] = useState(false);
+  const [videoNoteError, setVideoNoteError] = useState(false);
+
+  useEffect(() => {
+    setVideoNoteError(false);
+  }, [message.id, message.file_url]);
 
   // Нормализуем URL - заменяем HTTP на HTTPS для production
   const normalizeUrl = (url) => {
@@ -246,8 +267,18 @@ export default function MessageItem({ message, isOwnMessage, onLongPress }) {
         console.log('🎥 Video note playback URL:', playbackUrl);
         console.log('🎥 Message file_url:', message.file_url);
 
+        if (videoNoteError) {
+          return (
+            <View style={[styles.videoNoteContainer, styles.videoNoteErrorBox]}>
+              <Text style={[styles.videoNoteErrorText, isOwnMessage && styles.ownText]}>
+                Видео недоступно: файл не найден на сервере (часто после деплоя Railway). Новые кружочки сохраняются в облаке — запишите ещё раз.
+              </Text>
+            </View>
+          );
+        }
+
         if (Platform.OS !== 'web') {
-          return <VideoNoteNative uri={playbackUrl} />;
+          return <VideoNoteNative uri={playbackUrl} isOwnMessage={isOwnMessage} />;
         }
 
         // Определяем iOS (мобильный Safari)
@@ -281,6 +312,9 @@ export default function MessageItem({ message, isOwnMessage, onLongPress }) {
           }).catch(err => {
             console.log('❌ Play error:', err);
             setShowPlayButton(true);
+            if (err && (err.name === 'NotSupportedError' || String(err).includes('NotSupportedError'))) {
+              setVideoNoteError(true);
+            }
           });
         };
         
@@ -370,6 +404,7 @@ export default function MessageItem({ message, isOwnMessage, onLongPress }) {
                   canPlayType_mp4: video.canPlayType('video/mp4')
                 });
                 setShowPlayButton(true);
+                setVideoNoteError(true);
               }}
               onLoadedData={() => {
                 console.log('✅ Video data loaded');
@@ -771,6 +806,17 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
     backgroundColor: '#000'
+  },
+  videoNoteErrorBox: {
+    padding: 12,
+    minHeight: 80,
+    justifyContent: 'center'
+  },
+  videoNoteErrorText: {
+    fontSize: 13,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 18
   },
   videoPlayButton: {
     position: 'absolute',

@@ -79,12 +79,23 @@ const VideoNotePicker = forwardRef(({ onVideoNoteSelected, onCancel }, ref) => {
         }
       }, 100);
 
-      // Формат записи: на мобильных сначала VP8 (лучше крутится в WebView/«телефонном» Chrome),
-      // на десктопе — VP9 для качества.
+      // iOS (Safari и все браузеры на WebKit): WebM в <video> часто не играет — сначала MP4/H.264.
+      // Android: VP8 WebM обычно ок.
       const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+      const isIOS = /iPad|iPhone|iPod/.test(ua);
       const isMobileBrowser = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
 
       const pickMimeType = () => {
+        if (isIOS) {
+          const mp4First = [
+            'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+            'video/mp4;codecs=avc1.4D001E,mp4a.40.2',
+            'video/mp4'
+          ];
+          for (const c of mp4First) {
+            if (MediaRecorder.isTypeSupported(c)) return c;
+          }
+        }
         const candidates = isMobileBrowser
           ? [
               'video/webm;codecs=vp8,opus',
@@ -110,7 +121,11 @@ const VideoNotePicker = forwardRef(({ onVideoNoteSelected, onCancel }, ref) => {
 
       let mimeType = pickMimeType();
 
-      console.log('📹 Используемый формат видео:', mimeType || 'default', isMobileBrowser ? '(mobile)' : '(desktop)');
+      console.log(
+        '📹 Используемый формат видео:',
+        mimeType || 'default',
+        isIOS ? '(iOS→MP4 if possible)' : isMobileBrowser ? '(mobile)' : '(desktop)'
+      );
 
       // Создаем MediaRecorder
       const mediaRecorder = mimeType 

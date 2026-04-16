@@ -18,27 +18,45 @@ const { UPLOADS_DIR, ensureUploadsDir } = require('./src/config/uploads');
 const app = express();
 app.set('trust proxy', 1);
 const server = http.createServer(app);
-const allowedOrigins = [
+const staticOrigins = [
   'http://localhost:19006',
   'http://localhost:8081',
   'https://polka-pi.vercel.app',
   process.env.FRONTEND_URL
-].filter(Boolean);
+].filter(Boolean).map((o) => String(o).replace(/\/$/, ''));
+
+/** Разрешённые Origin для API и Socket.io (в т.ч. preview-деплои Vercel *.vercel.app) */
+function isOriginAllowed(origin) {
+  if (!origin) return true;
+  const o = origin.replace(/\/$/, '');
+  if (staticOrigins.includes(o)) return true;
+  if (/^https:\/\/[a-z0-9.-]+\.vercel\.app$/i.test(o)) return true;
+  return false;
+}
 
 const io = socketIo(server, {
   cors: {
-    origin: allowedOrigins,
-    methods: ['GET', 'POST'],
-    credentials: true
+    origin: (origin, callback) => {
+      const ok = isOriginAllowed(origin);
+      if (!ok && origin) console.warn('Socket.io CORS: origin not allowed:', origin);
+      callback(null, ok);
+    },
+    methods: ['GET', 'POST', 'OPTIONS'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization']
   }
 });
 
 const PORT = process.env.PORT || 3000;
 
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: (origin, callback) => callback(null, isOriginAllowed(origin)),
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  })
+);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

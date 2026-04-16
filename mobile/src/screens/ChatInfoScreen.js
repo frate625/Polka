@@ -19,6 +19,8 @@ import { messageAPI, chatAPI, uploadAPI } from '../services/api';
 import { useTheme } from '../store/ThemeContext';
 import { useAuth } from '../store/AuthContext';
 import * as ImagePicker from 'expo-image-picker';
+import { Video, ResizeMode } from 'expo-av';
+import { getVideoNotePlaybackUrlFromMessage } from '../utils/videoNoteUrl';
 
 export default function ChatInfoScreen() {
   const route = useRoute();
@@ -315,33 +317,47 @@ export default function ChatInfoScreen() {
     </TouchableOpacity>
   );
 
-  // Рендер видео-кружочка
-  const renderVideoNoteItem = ({ item }) => (
-    <TouchableOpacity 
-      style={styles.videoNoteItem}
-      onPress={() => openFile(item.file_url)}
-    >
-      {Platform.OS === 'web' ? (
-        <video
-          src={item.file_url}
-          style={{
-            width: '100%',
-            height: '100%',
-            borderRadius: '50%',
-            objectFit: 'cover',
-            backgroundColor: '#000'
-          }}
-        />
-      ) : (
-        <View style={[styles.videoNotePlaceholder, { backgroundColor: theme.colors.primary }]}>
-          <Text style={styles.videoNoteIcon}>⭕</Text>
+  // Рендер видео-кружочка (WebM → MP4 для Safari / expo-av на native)
+  const renderVideoNoteItem = ({ item }) => {
+    const playbackUrl = getVideoNotePlaybackUrlFromMessage(item.file_url);
+    return (
+      <TouchableOpacity
+        style={styles.videoNoteItem}
+        onPress={() => openFile(playbackUrl)}
+      >
+        {Platform.OS === 'web' ? (
+          <video
+            src={playbackUrl}
+            muted
+            playsInline
+            loop
+            autoPlay
+            style={{
+              width: '100%',
+              height: '100%',
+              borderRadius: '50%',
+              objectFit: 'cover',
+              backgroundColor: '#000'
+            }}
+          />
+        ) : (
+          <View style={styles.videoNoteNativeWrap}>
+            <Video
+              source={{ uri: playbackUrl }}
+              style={StyleSheet.absoluteFillObject}
+              resizeMode={ResizeMode.COVER}
+              shouldPlay
+              isMuted
+              isLooping
+            />
+          </View>
+        )}
+        <View style={styles.videoNotePlayOverlay}>
+          <Text style={styles.videoNotePlay}>▶️</Text>
         </View>
-      )}
-      <View style={styles.videoNotePlayOverlay}>
-        <Text style={styles.videoNotePlay}>▶️</Text>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   // Рендер ссылки
   const renderLinkItem = ({ item }) => {
@@ -869,6 +885,12 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     padding: 4,
     position: 'relative'
+  },
+  videoNoteNativeWrap: {
+    flex: 1,
+    borderRadius: 999,
+    overflow: 'hidden',
+    backgroundColor: '#000'
   },
   videoNotePlaceholder: {
     flex: 1,

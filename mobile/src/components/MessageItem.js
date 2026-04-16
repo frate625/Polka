@@ -1,7 +1,63 @@
 // Компонент для отображения одного сообщения в чате
 import React, { useRef, useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, Linking, Platform } from 'react-native';
+import { Video, ResizeMode } from 'expo-av';
 import { getBaseUrl } from '../services/api';
+import { getVideoNotePlaybackUrlFromMessage } from '../utils/videoNoteUrl';
+
+/** Кружочек на iOS/Android: HTML video в RN не работает; WebM на iOS не играет — URL с Cloudinary f_mp4. */
+function VideoNoteNative({ uri }) {
+  const ref = useRef(null);
+  const [previewMode, setPreviewMode] = useState(true);
+
+  const handlePress = async () => {
+    const v = ref.current;
+    if (!v) return;
+    try {
+      if (previewMode) {
+        await v.setPositionAsync(0);
+        await v.setIsMutedAsync(false);
+        await v.setIsLoopingAsync(false);
+        setPreviewMode(false);
+        await v.playAsync();
+      } else {
+        await v.setPositionAsync(0);
+        await v.playAsync();
+      }
+    } catch (e) {
+      console.warn('Video note play:', e);
+    }
+  };
+
+  const onPlaybackStatusUpdate = (st) => {
+    if (!st.isLoaded) return;
+    // Не полагаемся на previewMode из замыкания — смотрим isLooping из статуса
+    if (st.didJustFinish && !st.isLooping) {
+      setPreviewMode(true);
+      ref.current?.setIsMutedAsync(true);
+      ref.current?.setIsLoopingAsync(true);
+      ref.current?.setPositionAsync(0);
+      ref.current?.playAsync();
+    }
+  };
+
+  return (
+    <View style={styles.videoNoteContainer}>
+      <TouchableOpacity activeOpacity={0.95} onPress={handlePress}>
+        <Video
+          ref={ref}
+          style={styles.videoNoteNativeVideo}
+          source={{ uri }}
+          resizeMode={ResizeMode.COVER}
+          isLooping={previewMode}
+          shouldPlay
+          isMuted={previewMode}
+          onPlaybackStatusUpdate={onPlaybackStatusUpdate}
+        />
+      </TouchableOpacity>
+    </View>
+  );
+}
 
 export default function MessageItem({ message, isOwnMessage, onLongPress }) {
   const audioRef = useRef(null);
@@ -186,23 +242,15 @@ export default function MessageItem({ message, isOwnMessage, onLongPress }) {
           );
         }
         
-        // Формируем правильный URL для видео
-        let videoNoteUrl;
-        if (message.file_url.startsWith('http')) {
-          // Уже полный URL
-          videoNoteUrl = normalizeUrl(message.file_url);
-        } else if (message.file_url.startsWith('/uploads/')) {
-          // Относительный путь от backend - добавляем Railway URL
-          videoNoteUrl = `https://polka-production.up.railway.app${message.file_url}`;
-        } else {
-          // Другой случай - используем как есть с базовым URL
-          videoNoteUrl = normalizeUrl(`${getBaseUrl()}${message.file_url}`);
-        }
-        
-        console.log('🎥 Video note URL:', videoNoteUrl);
+        const playbackUrl = getVideoNotePlaybackUrlFromMessage(message.file_url);
+        console.log('🎥 Video note playback URL:', playbackUrl);
         console.log('🎥 Message file_url:', message.file_url);
-        
-        // Определяем iOS
+
+        if (Platform.OS !== 'web') {
+          return <VideoNoteNative uri={playbackUrl} />;
+        }
+
+        // Определяем iOS (мобильный Safari)
         const isIOS = Platform.OS === 'web' && /iPad|iPhone|iPod/.test(navigator.userAgent);
         
         const handleVideoClick = (e) => {
@@ -240,7 +288,7 @@ export default function MessageItem({ message, isOwnMessage, onLongPress }) {
           <View style={styles.videoNoteContainer}>
             <video
               ref={(el) => { videoRef.current = el; }}
-              src={videoNoteUrl}
+              src={playbackUrl}
               autoPlay={!isIOS}
               loop={!isIOS}
               muted={true}
@@ -254,7 +302,7 @@ export default function MessageItem({ message, isOwnMessage, onLongPress }) {
                 }
               }}
               onLoadStart={() => {
-                console.log('📥 Video load start, URL:', videoNoteUrl);
+                console.log('📥 Video load start, URL:', playbackUrl);
               }}
               onLoadedMetadata={(e) => {
                 const video = e.target;
@@ -716,7 +764,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 0,
-    position: 'relative'
+    position: 'relative',
+    backgroundColor: '#000'
+  },
+  videoNoteNativeVideo: {
+    width: 200,
+    height: 200,
+    backgroundColor: '#000'
   },
   videoPlayButton: {
     position: 'absolute',
